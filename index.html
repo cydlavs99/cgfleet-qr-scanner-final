@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  >
+
+  <title>CGFLEET QR Monitoring</title>
+
+  <!-- QR SCANNER LIBRARY -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      min-height: 100%;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f2f4f7;
+      color: #111;
+    }
+
+    body {
+      min-height: 100vh;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background: #ffffff;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.08);
+    }
+
+    /* HEADER */
+    .header {
+      background: #111;
+      color: #fff;
+      padding: 18px 16px;
+      text-align: center;
+      border-bottom: 5px solid #00ff00;
+    }
+
+    .header-title {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+    }
+
+    .header-subtitle {
+      margin-top: 5px;
+      font-size: 13px;
+      color: #cfcfcf;
+      font-weight: 600;
+    }
+
+    /* MAIN */
+    .main {
+      padding: 15px;
+    }
+
+    /* STATUS */
+    .system-status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: #f4f4f4;
+      border-radius: 12px;
+      padding: 11px;
+      margin-bottom: 14px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .status-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: #999;
+    }
+
+    .status-dot.online {
+      background: #00c853;
+      box-shadow: 0 0 8px rgba(0, 200, 83, 0.7);
+    }
+
+    .status-dot.error {
+      background: #ff1744;
+    }
+
+    /* SCANNER */
+    .scanner-card {
+      background: #111;
+      border-radius: 18px;
+      padding: 12px;
+      overflow: hidden;
+    }
+
+    #reader {
+      width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+    }
+
+    #reader video {
+      width: 100% !important;
+      height: auto !important;
+      border-radius: 12px;
+    }
+
+    #reader__scan_region {
+      background: #000 !important;
+    }
+
+    #reader__dashboard {
+      padding: 10px !important;
+      background: #111 !important;
+    }
+
+    #reader__dashboard button {
+      background: #00ff00 !important;
+      color: #000 !important;
+      border: none !important;
+      border-radius: 8px !important;
+      padding: 10px 14px !important;
+      font-weight: 900 !important;
+      cursor: pointer !important;
+    }
+
+    #reader__dashboard select {
+      border-radius: 8px !important;
+      padding: 8px !important;
+      max-width: 100% !important;
+    }
+
+    #reader__status_span {
+      color: #fff !important;
+    }
+
+    /* SCAN MESSAGE */
+    .scan-message {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 15px;
+      font-weight: 900;
+      display: none;
+    }
+
+    .scan-message.info {
+      display: block;
+      background: #e8f1ff;
+      color: #1254a4;
+    }
+
+    .scan-message.success {
+      display: block;
+      background: #d9ffd9;
+      color: #087508;
+    }
+
+    .scan-message.error {
+      display: block;
+      background: #ffe0e0;
+      color: #b00000;
+    }
+
+    .scan-message.warning {
+      display: block;
+      background: #fff2cc;
+      color: #8a6200;
+    }
+
+    /* RESULT CARD */
+    .result-card {
+      margin-top: 15px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 2px solid #ddd;
+      display: none;
+      background: #fff;
+    }
+
+    .result-card.visible {
+      display: block;
+    }
+
+    .result-header {
+      padding: 15px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .result-header.time-in {
+      background: #00ff00;
+      color: #000;
+    }
+
+    .result-header.time-out {
+      background: #ff0000;
+      color: #fff;
+    }
+
+    .result-header.error {
+      background: #ff0000;
+      color: #fff;
+    }
+
+    .result-body {
+      padding: 15px;
+    }
+
+    .person-name {
+      text-align: center;
+      font-size: 24px;
+      font-weight: 900;
+      margin-bottom: 15px;
+      line-height: 1.2;
+    }
+
+    .details {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 9px;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 15px;
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .detail-label {
+      color: #666;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      flex: 0 0 125px;
+    }
+
+    .detail-value {
+      text-align: right;
+      font-size: 14px;
+      font-weight: 800;
+      word-break: break-word;
+    }
+
+    /* BUTTONS */
+    .button-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .btn {
+      flex: 1;
+      min-height: 48px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .btn-scan {
+      background: #00ff00;
+      color: #000;
+    }
+
+    .btn-stop {
+      background: #222;
+      color: #fff;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* LOADING */
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 15px;
+      font-weight: 900;
+    }
+
+    .loading.visible {
+      display: block;
+    }
+
+    .spinner {
+      width: 25px;
+      height: 25px;
+      margin: 0 auto 8px;
+      border: 4px solid #ddd;
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* FOOTER */
+    .footer {
+      text-align: center;
+      padding: 20px 10px;
+      color: #777;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    /* CAMERA PERMISSION */
+    .camera-help {
+      margin-top: 12px;
+      background: #fff8dc;
+      border: 1px solid #efd36a;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 12px;
+      line-height: 1.5;
+      display: none;
+    }
+
+    .camera-help.visible {
+      display: block;
+    }
+
+    @media (min-width: 600px) {
+      body {
+        padding: 20px;
+      }
+
+      .app {
+        min-height: calc(100vh - 40px);
+        border-radius: 18px;
+        overflow: hidden;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <h1 class="header-title">CGFLEET</h1>
+    <div class="header-subtitle">
+      QR TIME IN / TIME OUT MONITORING
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- SYSTEM STATUS -->
+    <div class="system-status">
+      <span id="statusDot" class="status-dot"></span>
+      <span id="systemStatus">
+        Connecting to monitoring system...
+      </span>
+    </div>
+
+    <!-- SCANNER -->
+    <div class="scanner-card">
+      <div id="reader"></div>
+    </div>
+
+    <!-- CAMERA HELP -->
+    <div id="cameraHelp" class="camera-help">
+      <strong>Camera access required.</strong><br>
+      Please allow camera permission in your browser.
+      If permission was previously denied, open your browser's
+      site settings and allow Camera for this GitHub Pages site.
+    </div>
+
+    <!-- SCAN MESSAGE -->
+    <div id="scanMessage" class="scan-message"></div>
+
+    <!-- LOADING -->
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      Processing QR Code...
+    </div>
+
+    <!-- RESULT -->
+    <div id="resultCard" class="result-card">
+
+      <div id="resultHeader" class="result-header">
+        SCAN RESULT
+      </div>
+
+      <div class="result-body">
+
+        <div id="personName" class="person-name">
+          -
+        </div>
+
+        <div class="details">
+
+          <div class="detail-row">
+            <div class="detail-label">
+              QR Code
+            </div>
+            <div id="resultQR" class="detail-value">
+              -
+            </div>
+          </div>
+
+          <div class="detail-row">
+            <div class="detail-label">
+              Office / Unit
+            </div>
+            <div id="resultOffice" class="detail-value">
+              -
+            </div>
+          </div>
+
+          <div class="detail-row">
+            <div class="detail-label">
+              Contact
+            </div>
+            <div id="resultContact" class="detail-value">
+              -
+            </div>
+          </div>
+
+          <div class="detail-row">
+            <div class="detail-label">
+              Vehicle
+            </div>
+            <div id="resultVehicle" class="detail-value">
+              -
+            </div>
+          </div>
+
+          <div class="detail-row">
+            <div class="detail-label">
+              Color
+            </div>
+            <div id="resultColor" class="detail-value">
+              -
+            </div>
+          </div>
+
+          <div class="detail-row">
+            <div class="detail-label">
+              Plate Number
+            </div>
+            <div id="resultPlate" class="detail-value">
+              -
+            </div>
+          </div>
+
+          <div class="detail-row">
+            <div class="detail-label">
+              Registered
+            </div>
+            <div id="resultRegistered" class="detail-value">
+              -
+            </div>
+          </div>
+
+          <div class="detail-row">
+            <div class="detail-label">
+              Date / Time
+            </div>
+            <div id="resultDateTime" class="detail-value">
+              -
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- BUTTONS -->
+    <div class="button-row">
+
+      <button
+        id="startButton"
+        class="btn btn-scan"
+        onclick="startScanner()"
+      >
+        START SCANNER
+      </button>
+
+      <button
+        id="stopButton"
+        class="btn btn-stop"
+        onclick="stopScanner()"
+        disabled
+      >
+        STOP
+      </button>
+
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    CGFLEET QR Monitoring System
+  </footer>
+
+</div>
+
+
+<script>
+
+/************************************************************
+ * GOOGLE APPS SCRIPT WEB APP
+ ************************************************************/
+
+const GOOGLE_SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbwuYGfZWDQ5CgNQdld38J4pBqVvM_WZRHCGMGkVEHWeJ51fjf04V8L0NDV-SUcA2hdNpQ/exec";
+
+
+/************************************************************
+ * GLOBAL VARIABLES
+ ************************************************************/
+
+let html5QrCode = null;
+
+let scannerRunning = false;
+
+let processingScan = false;
+
+let lastScannedQR = "";
+
+let lastScanTime = 0;
+
+
+/*
+ * Prevent the same QR from being processed repeatedly
+ * by the camera.
+ */
+const SCAN_COOLDOWN = 3000;
+
+
+/************************************************************
+ * DOM HELPERS
+ ************************************************************/
+
+function $(id) {
+
+  return document.getElementById(id);
+
+}
+
+
+/************************************************************
+ * SET SYSTEM STATUS
+ ************************************************************/
+
+function setSystemStatus(message, type) {
+
+  $("systemStatus").textContent = message;
+
+  const dot = $("statusDot");
+
+  dot.className = "status-dot";
+
+  if (type === "online") {
+
+    dot.classList.add("online");
+
+  }
+
+  if (type === "error") {
+
+    dot.classList.add("error");
+
+  }
+
+}
+
+
+/************************************************************
+ * SHOW MESSAGE
+ ************************************************************/
+
+function showMessage(message, type) {
+
+  const box = $("scanMessage");
+
+  box.textContent = message;
+
+  box.className = "scan-message " + (type || "info");
+
+}
+
+
+/************************************************************
+ * HIDE MESSAGE
+ ************************************************************/
+
+function hideMessage() {
+
+  const box = $("scanMessage");
+
+  box.textContent = "";
+
+  box.className = "scan-message";
+
+}
+
+
+/************************************************************
+ * SHOW LOADING
+ ************************************************************/
+
+function showLoading(show) {
+
+  if (show) {
+
+    $("loading").classList.add("visible");
+
+  } else {
+
+    $("loading").classList.remove("visible");
+
+  }
+
+}
+
+
+/************************************************************
+ * FORMAT TEXT
+ ************************************************************/
+
+function safeText(value) {
+
+  if (
+    value === null ||
+    value === undefined ||
+    String(value).trim() === ""
+  ) {
+
+    return "-";
+
+  }
+
+  return String(value).trim();
+
+}
+
+
+/************************************************************
+ * START SCANNER
+ ************************************************************/
+
+async function startScanner() {
+
+  if (scannerRunning) {
+
+    return;
+
+  }
+
+
+  hideMessage();
+
+  $("cameraHelp").classList.remove("visible");
+
+
+  try {
+
+    html5QrCode =
+      new Html5Qrcode("reader");
+
+
+    /*
+     * Prefer rear camera.
+     */
+    const config = {
+
+      fps: 10,
+
+      qrbox: function(
+        viewfinderWidth,
+        viewfinderHeight
+      ) {
+
+        const size =
+          Math.floor(
+            Math.min(
+              viewfinderWidth,
+              viewfinderHeight
+            ) * 0.70
+          );
+
+        return {
+
+          width: size,
+
+          height: size
+
+        };
+
+      },
+
+      aspectRatio: 1.0,
+
+      disableFlip: false
+
+    };
+
+
+    await html5QrCode.start(
+
+      {
+        facingMode: "environment"
+      },
+
+      config,
+
+      onScanSuccess,
+
+      onScanFailure
+
+    );
+
+
+    scannerRunning = true;
+
+    $("startButton").disabled = true;
+
+    $("stopButton").disabled = false;
+
+    setSystemStatus(
+      "Scanner ready",
+      "online"
+    );
+
+    showMessage(
+      "READY — I-scan ang QR Code.",
+      "info"
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "CAMERA START ERROR:",
+      error
+    );
+
+
+    scannerRunning = false;
+
+    $("startButton").disabled = false;
+
+    $("stopButton").disabled = true;
+
+    setSystemStatus(
+      "Camera unavailable",
+      "error"
+    );
+
+
+    $("cameraHelp").classList.add(
+      "visible"
+    );
+
+
+    showMessage(
+      "Hindi ma-access ang camera. Payagan ang Camera permission.",
+      "error"
+    );
+
+  }
+
+}
+
+
+/************************************************************
+ * STOP SCANNER
+ ************************************************************/
+
+async function stopScanner() {
+
+  if (!html5QrCode) {
+
+    return;
+
+  }
+
+
+  try {
+
+    if (scannerRunning) {
+
+      await html5QrCode.stop();
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      "STOP SCANNER ERROR:",
+      error
+    );
+
+  }
+
+
+  try {
+
+    await html5QrCode.clear();
+
+  } catch (ignore) {}
+
+
+  html5QrCode = null;
+
+  scannerRunning = false;
+
+  $("startButton").disabled = false;
+
+  $("stopButton").disabled = true;
+
+  setSystemStatus(
+    "Scanner stopped",
+    ""
+  );
+
+}
+
+
+/************************************************************
+ * QR SCAN SUCCESS
+ ************************************************************/
+
+function onScanSuccess(decodedText, decodedResult) {
+
+  const qr =
+    String(
+      decodedText || ""
+    ).trim();
+
+
+  if (!qr) {
+
+    return;
+
+  }
+
+
+  const now =
+    Date.now();
+
+
+  /*
+   * Ignore repeated camera detections.
+   */
+  if (
+    processingScan
+  ) {
+
+    return;
+
+  }
+
+
+  if (
+    qr === lastScannedQR &&
+    (now - lastScanTime) < SCAN_COOLDOWN
+  ) {
+
+    return;
+
+  }
+
+
+  lastScannedQR = qr;
+
+  lastScanTime = now;
+
+  processingScan = true;
+
+
+  processQR(qr);
+
+}
+
+
+/************************************************************
+ * QR SCAN FAILURE
+ ************************************************************/
+
+function onScanFailure(errorMessage) {
+
+  /*
+   * html5-qrcode calls this continuously while
+   * no QR is detected.
+   *
+   * Do not display an error here.
+   */
+
+}
+
+
+/************************************************************
+ * PROCESS QR
+ ************************************************************/
+
+function processQR(qr) {
+
+  showLoading(true);
+
+  hideMessage();
+
+  setSystemStatus(
+    "Processing QR Code...",
+    "online"
+  );
+
+
+  /*
+   * JSONP callback name.
+   */
+  const callbackName =
+    "cgfleetCallback_" +
+    Date.now() +
+    "_" +
+    Math.floor(
+      Math.random() * 100000
+    );
+
+
+  let script = null;
+
+  let completed = false;
+
+
+  /*
+   * Timeout protection.
+   */
+  const timeout =
+    setTimeout(
+      function() {
+
+        if (completed) {
+
+          return;
+
+        }
+
+        completed = true;
+
+        cleanup();
+
+        showLoading(false);
+
+        processingScan = false;
+
+        setSystemStatus(
+          "Connection timeout",
+          "error"
+        );
+
+        showMessage(
+          "SERVER TIMEOUT — Pakiscan muli.",
+          "error"
+        );
+
+      },
+      15000
+    );
+
+
+  /*
+   * JSONP callback.
+   */
+  window[callbackName] =
+    function(result) {
+
+      if (completed) {
+
+        return;
+
+      }
+
+      completed = true;
+
+      clearTimeout(timeout);
+
+      cleanup();
+
+
+      showLoading(false);
+
+      processingScan = false;
+
+
+      handleScanResult(result);
+
+    };
+
+
+  /*
+   * JSONP script.
+   */
+  script =
+    document.createElement("script");
+
+
+  const url =
+    GOOGLE_SCRIPT_URL +
+    "?action=processScan" +
+    "&qr=" +
+    encodeURIComponent(qr) +
+    "&callback=" +
+    encodeURIComponent(callbackName) +
+    "&_=" +
+    Date.now();
+
+
+  script.src = url;
+
+  script.async = true;
+
+
+  script.onerror =
+    function() {
+
+      if (completed) {
+
+        return;
+
+      }
+
+      completed = true;
+
+      clearTimeout(timeout);
+
+      cleanup();
+
+      showLoading(false);
+
+      processingScan = false;
+
+      setSystemStatus(
+        "Server connection error",
+        "error"
+      );
+
+      showMessage(
+        "SERVER CONNECTION ERROR — Pakiscan muli.",
+        "error"
+      );
+
+    };
+
+
+  document.body.appendChild(script);
+
+
+  function cleanup() {
+
+    if (script && script.parentNode) {
+
+      script.parentNode.removeChild(
+        script
+      );
+
+    }
+
+
+    try {
+
+      delete window[callbackName];
+
+    } catch (ignore) {
+
+      window[callbackName] =
+        undefined;
+
+    }
+
+  }
+
+}
+
+
+/************************************************************
+ * HANDLE SCAN RESULT
+ ************************************************************/
+
+function handleScanResult(result) {
+
+  console.log(
+    "SERVER RESULT:",
+    result
+  );
+
+
+  if (!result) {
+
+    setSystemStatus(
+      "Invalid server response",
+      "error"
+    );
+
+    showMessage(
+      "INVALID SERVER RESPONSE",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  /*
+   * SUCCESS
+   */
+  if (result.success === true) {
+
+    showResult(result);
+
+
+    if (
+      result.action === "TIME IN"
+    ) {
+
+      setSystemStatus(
+        "TIME IN recorded",
+        "online"
+      );
+
+      showMessage(
+        "TIME IN SUCCESSFUL",
+        "success"
+      );
+
+
+      playSuccessSound();
+
+    }
+
+
+    else if (
+      result.action === "TIME OUT"
+    ) {
+
+      setSystemStatus(
+        "TIME OUT recorded",
+        "online"
+      );
+
+      showMessage(
+        "TIME OUT SUCCESSFUL",
+        "success"
+      );
+
+
+      playSuccessSound();
+
+    }
+
+
+    else {
+
+      setSystemStatus(
+        "Scan successful",
+        "online"
+      );
+
+    }
+
+
+    /*
+     * After a successful scan,
+     * allow another scan after cooldown.
+     */
+    setTimeout(
+      function() {
+
+        processingScan = false;
+
+      },
+      1200
+    );
+
+
+    return;
+
+  }
+
+
+  /*
+   * QR NOT REGISTERED
+   */
+  if (
+    result.message ===
+    "QR CODE NOT REGISTERED"
+  ) {
+
+    hideResult();
+
+
+    setSystemStatus(
+      "QR not registered",
+      "error"
+    );
+
+
+    showMessage(
+      "QR CODE NOT REGISTERED",
+      "error"
+    );
+
+
+    playErrorSound();
+
+
+    setTimeout(
+      function() {
+
+        processingScan = false;
+
+      },
+      1200
+    );
+
+
+    return;
+
+  }
+
+
+  /*
+   * INVALID QR
+   */
+  if (
+    result.message ===
+    "INVALID QR CODE"
+  ) {
+
+    hideResult();
+
+
+    setSystemStatus(
+      "Invalid QR Code",
+      "error"
+    );
+
+
+    showMessage(
+      "INVALID QR CODE",
+      "error"
+    );
+
+
+    playErrorSound();
+
+
+    setTimeout(
+      function() {
+
+        processingScan = false;
+
+      },
+      1200
+    );
+
+
+    return;
+
+  }
+
+
+  /*
+   * OTHER ERROR
+   */
+  hideResult();
+
+
+  setSystemStatus(
+    "System error",
+    "error"
+  );
+
+
+  showMessage(
+    result.message ||
+    "SYSTEM ERROR",
+    "error"
+  );
+
+
+  playErrorSound();
+
+
+  setTimeout(
+    function() {
+
+      processingScan = false;
+
+    },
+    1200
+  );
+
+}
+
+
+/************************************************************
+ * SHOW RESULT
+ ************************************************************/
+
+function showResult(result) {
+
+  const card =
+    $("resultCard");
+
+
+  const header =
+    $("resultHeader");
+
+
+  card.classList.add(
+    "visible"
+  );
+
+
+  header.className =
+    "result-header";
+
+
+  if (
+    result.action ===
+    "TIME IN"
+  ) {
+
+    header.textContent =
+      "✓ TIME IN";
+
+    header.classList.add(
+      "time-in"
+    );
+
+  }
+
+  else if (
+    result.action ===
+    "TIME OUT"
+  ) {
+
+    header.textContent =
+      "✓ TIME OUT";
+
+    header.classList.add(
+      "time-out"
+    );
+
+  }
+
+  else {
+
+    header.textContent =
+      "SCAN SUCCESSFUL";
+
+  }
+
+
+  $("personName").textContent =
+    safeText(
+      result.name
+    );
+
+
+  $("resultQR").textContent =
+    safeText(
+      result.qr ||
+      result.serial
+    );
+
+
+  $("resultOffice").textContent =
+    safeText(
+      result.office
+    );
+
+
+  $("resultContact").textContent =
+    safeText(
+      result.contact
+    );
+
+
+  $("resultVehicle").textContent =
+    safeText(
+      result.vehicle
+    );
+
+
+  $("resultColor").textContent =
+    safeText(
+      result.color
+    );
+
+
+  $("resultPlate").textContent =
+    safeText(
+      result.plate
+    );
+
+
+  $("resultRegistered").textContent =
+    safeText(
+      result.registeredDate
+    );
+
+
+  $("resultDateTime").textContent =
+    safeText(
+      result.dateTime
+    );
+
+}
+
+
+/************************************************************
+ * HIDE RESULT
+ ************************************************************/
+
+function hideResult() {
+
+  $("resultCard")
+    .classList
+    .remove("visible");
+
+}
+
+
+/************************************************************
+ * SUCCESS SOUND
+ ************************************************************/
+
+function playSuccessSound() {
+
+  try {
+
+    const AudioContext =
+      window.AudioContext ||
+      window.webkitAudioContext;
+
+
+    if (!AudioContext) {
+
+      return;
+
+    }
+
+
+    const ctx =
+      new AudioContext();
+
+
+    const oscillator =
+      ctx.createOscillator();
+
+
+    const gain =
+      ctx.createGain();
+
+
+    oscillator.type =
+      "sine";
+
+
+    oscillator.frequency.value =
+      880;
+
+
+    gain.gain.setValueAtTime(
+      0.0001,
+      ctx.currentTime
+    );
+
+
+    gain.gain.exponentialRampToValueAtTime(
+      0.25,
+      ctx.currentTime + 0.02
+    );
+
+
+    gain.gain.exponentialRampToValueAtTime(
+      0.0001,
+      ctx.currentTime + 0.30
+    );
+
+
+    oscillator.connect(gain);
+
+    gain.connect(ctx.destination);
+
+
+    oscillator.start();
+
+    oscillator.stop(
+      ctx.currentTime + 0.30
+    );
+
+  } catch (error) {
+
+    console.log(
+      "Audio unavailable"
+    );
+
+  }
+
+}
+
+
+/************************************************************
+ * ERROR SOUND
+ ************************************************************/
+
+function playErrorSound() {
+
+  try {
+
+    const AudioContext =
+      window.AudioContext ||
+      window.webkitAudioContext;
+
+
+    if (!AudioContext) {
+
+      return;
+
+    }
+
+
+    const ctx =
+      new AudioContext();
+
+
+    const oscillator =
+      ctx.createOscillator();
+
+
+    const gain =
+      ctx.createGain();
+
+
+    oscillator.type =
+      "square";
+
+
+    oscillator.frequency.value =
+      220;
+
+
+    gain.gain.setValueAtTime(
+      0.0001,
+      ctx.currentTime
+    );
+
+
+    gain.gain.exponentialRampToValueAtTime(
+      0.15,
+      ctx.currentTime + 0.02
+    );
+
+
+    gain.gain.exponentialRampToValueAtTime(
+      0.0001,
+      ctx.currentTime + 0.25
+    );
+
+
+    oscillator.connect(gain);
+
+    gain.connect(ctx.destination);
+
+
+    oscillator.start();
+
+    oscillator.stop(
+      ctx.currentTime + 0.25
+    );
+
+  } catch (error) {
+
+    console.log(
+      "Audio unavailable"
+    );
+
+  }
+
+}
+
+
+/************************************************************
+ * PAGE LOAD
+ ************************************************************/
+
+document.addEventListener(
+  "DOMContentLoaded",
+  function() {
+
+    setSystemStatus(
+      "Ready — start scanner",
+      ""
+    );
+
+  }
+);
+
+
+/************************************************************
+ * CLEANUP WHEN PAGE IS CLOSED
+ ************************************************************/
+
+window.addEventListener(
+  "beforeunload",
+  function() {
+
+    if (
+      html5QrCode &&
+      scannerRunning
+    ) {
+
+      try {
+
+        html5QrCode.stop();
+
+      } catch (ignore) {}
+
+    }
+
+  }
+);
+
+</script>
+
+</body>
+</html>
