@@ -174,8 +174,6 @@
       border-radius: 12px;
       display: block;
       background: #000;
-      -webkit-transform: translateZ(0);
-      transform: translateZ(0);
     }
 
     #reader__scan_region {
@@ -192,8 +190,6 @@
       border-radius: 12px !important;
       display: block !important;
       background: #000 !important;
-      -webkit-transform: translateZ(0);
-      transform: translateZ(0);
     }
 
     #reader__dashboard {
@@ -208,7 +204,6 @@
       border-radius: 8px !important;
       padding: 10px 14px !important;
       font-weight: 900 !important;
-      cursor: pointer !important;
       min-height: 44px !important;
     }
 
@@ -241,7 +236,6 @@
       font-weight: 900;
       cursor: pointer;
       transition: 0.15s;
-      -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
 
@@ -269,8 +263,6 @@
       cursor: not-allowed;
     }
 
-    /* HIDDEN FILE INPUT */
-
     #qrFileInput {
       display: none;
     }
@@ -292,7 +284,7 @@
       display: block;
     }
 
-    /* SCAN MESSAGE */
+    /* MESSAGE */
 
     .scan-message {
       margin-top: 14px;
@@ -383,7 +375,7 @@
       }
     }
 
-    /* RESULT CARD */
+    /* RESULT */
 
     .result-card {
       margin-top: 15px;
@@ -547,22 +539,18 @@
 
         <br><br>
 
-        Please allow camera permission in your browser.
-
-        <br><br>
-
         <strong>iPhone / iPad:</strong>
 
         <br>
 
-        Open this GitHub Pages website directly in
+        Open the GitHub Pages website directly in
         <strong>Safari</strong>.
 
         <br>
 
-        Do NOT use the Home Screen/PWA version while testing.
+        Do not use the Home Screen/PWA version while testing.
 
-        <br>
+        <br><br>
 
         Press <strong>START SCANNER</strong>.
 
@@ -573,12 +561,11 @@
 
         <br><br>
 
-        If permission was previously blocked:
+        If the camera was previously blocked:
 
         <br>
 
-        Open Safari website settings and set
-        <strong>Camera → Allow</strong>.
+        Safari Website Settings → Camera → <strong>Allow</strong>
 
         <br><br>
 
@@ -590,11 +577,7 @@
 
         <br><br>
 
-        <strong>Important:</strong>
-
-        <br>
-
-        This website must be opened using
+        The website must be opened using
         <strong>HTTPS</strong>.
 
         <br><br>
@@ -1007,13 +990,11 @@
     function showLoading(show) {
 
       if (show) {
-
         $("loading").classList.add("visible");
+      }
 
-      } else {
-
+      else {
         $("loading").classList.remove("visible");
-
       }
 
     }
@@ -1041,7 +1022,7 @@
 
 
     /********************************************************************
-     * CAMERA ERROR TEXT
+     * CAMERA ERROR
      ********************************************************************/
 
     function getCameraErrorDetails(error) {
@@ -1067,10 +1048,15 @@
 
       }
 
-
       return {
-        name: name || "UnknownError",
-        message: message || "No additional error information."
+
+        name:
+          name || "UnknownError",
+
+        message:
+          message ||
+          "No additional error information."
+
       };
 
     }
@@ -1089,9 +1075,12 @@
       ) {
 
         return {
+
           ok: false,
+
           message:
             "CAMERA REQUIRES HTTPS. Open the GitHub Pages HTTPS address."
+
         };
 
       }
@@ -1103,9 +1092,12 @@
       ) {
 
         return {
+
           ok: false,
+
           message:
             "CAMERA API IS NOT AVAILABLE. Use Safari on iPhone/iPad or Chrome on Android."
+
         };
 
       }
@@ -1116,9 +1108,12 @@
       ) {
 
         return {
+
           ok: false,
+
           message:
             "QR SCANNER LIBRARY DID NOT LOAD. Check your internet connection."
+
         };
 
       }
@@ -1152,218 +1147,10 @@
 
 
     /********************************************************************
-     * DIRECT CAMERA TEST
-     *
-     * This deliberately uses the browser's real getUserMedia()
-     * instead of navigator.permissions.query().
-     *
-     * This is more reliable for diagnosing iPhone/iPad/Android.
-     ********************************************************************/
-
-    async function requestCameraStream() {
-
-      if (
-        !navigator.mediaDevices ||
-        !navigator.mediaDevices.getUserMedia
-      ) {
-
-        throw new Error(
-          "getUserMedia is not available in this browser."
-        );
-
-      }
-
-
-      try {
-
-        const stream =
-          await navigator.mediaDevices.getUserMedia({
-
-            audio: false,
-
-            video: {
-              facingMode: {
-                ideal: "environment"
-              }
-            }
-
-          });
-
-
-        showCameraDiagnostic(
-          "Camera permission granted."
-        );
-
-
-        return stream;
-
-      }
-
-      catch (error) {
-
-        const details =
-          getCameraErrorDetails(error);
-
-
-        console.error(
-          "DIRECT getUserMedia ERROR:",
-          error
-        );
-
-
-        showCameraDiagnostic(
-          details.name +
-          " — " +
-          details.message
-        );
-
-
-        throw error;
-
-      }
-
-    }
-
-
-    /********************************************************************
-     * STOP MEDIA STREAM
-     ********************************************************************/
-
-    function stopMediaStream(stream) {
-
-      if (!stream) {
-        return;
-      }
-
-
-      try {
-
-        const tracks =
-          stream.getTracks();
-
-
-        tracks.forEach(
-          function(track) {
-
-            try {
-
-              track.stop();
-
-            }
-
-            catch (ignore) {}
-
-          }
-        );
-
-      }
-
-      catch (error) {
-
-        console.warn(
-          "STREAM STOP ERROR:",
-          error
-        );
-
-      }
-
-    }
-
-
-    /********************************************************************
-     * FIND BEST CAMERA
-     ********************************************************************/
-
-    async function findBestCamera() {
-
-      try {
-
-        const cameras =
-          await Html5Qrcode.getCameras();
-
-
-        if (
-          !cameras ||
-          cameras.length === 0
-        ) {
-
-          return null;
-
-        }
-
-
-        console.log(
-          "AVAILABLE CAMERAS:",
-          cameras
-        );
-
-
-        const preferred =
-          cameras.find(
-            function(camera) {
-
-              const label =
-                String(
-                  camera.label || ""
-                ).toLowerCase();
-
-
-              return (
-                label.includes("back") ||
-                label.includes("rear") ||
-                label.includes("environment") ||
-                label.includes("world") ||
-                label.includes("main")
-              );
-
-            }
-          );
-
-
-        if (preferred) {
-
-          return preferred.id;
-
-        }
-
-
-        return cameras[0].id;
-
-      }
-
-      catch (error) {
-
-        console.warn(
-          "CAMERA LIST ERROR:",
-          error
-        );
-
-
-        const details =
-          getCameraErrorDetails(error);
-
-
-        showCameraDiagnostic(
-          details.name +
-          " — " +
-          details.message
-        );
-
-
-        return null;
-
-      }
-
-    }
-
-
-    /********************************************************************
      * CREATE SCANNER
      ********************************************************************/
 
     function createScanner() {
-
-      $("reader").innerHTML = "";
 
       html5QrCode =
         new Html5Qrcode(
@@ -1383,54 +1170,32 @@
 
         fps: 10,
 
-        qrbox:
-          function(
-            viewfinderWidth,
-            viewfinderHeight
-          ) {
+        qrbox: function(
+          viewfinderWidth,
+          viewfinderHeight
+        ) {
 
-            const smallestDimension =
-              Math.min(
-                viewfinderWidth,
-                viewfinderHeight
-              );
+          const minDimension =
+            Math.min(
+              viewfinderWidth,
+              viewfinderHeight
+            );
 
+          const size =
+            Math.floor(
+              minDimension * 0.70
+            );
 
-            const size =
-              Math.floor(
-                smallestDimension * 0.70
-              );
+          return {
+            width: Math.min(size, 300),
+            height: Math.min(size, 300)
+          };
 
+        },
 
-            return {
+        aspectRatio: 1.0,
 
-              width:
-                Math.max(
-                  180,
-                  Math.min(
-                    size,
-                    400
-                  )
-                ),
-
-              height:
-                Math.max(
-                  180,
-                  Math.min(
-                    size,
-                    400
-                  )
-                )
-
-            };
-
-          },
-
-        disableFlip: false,
-
-        experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true
-        }
+        disableFlip: false
 
       };
 
@@ -1438,7 +1203,155 @@
 
 
     /********************************************************************
+     * FIND BEST CAMERA
+     ********************************************************************/
+
+    async function findBestCamera() {
+
+      try {
+
+        const cameras =
+          await Html5Qrcode.getCameras();
+
+        if (
+          !cameras ||
+          cameras.length === 0
+        ) {
+
+          return null;
+
+        }
+
+
+        const backCamera =
+          cameras.find(function(camera) {
+
+            const label =
+              String(
+                camera.label || ""
+              ).toLowerCase();
+
+            return (
+              label.includes("back") ||
+              label.includes("rear") ||
+              label.includes("environment")
+            );
+
+          });
+
+
+        if (backCamera) {
+
+          return backCamera.id;
+
+        }
+
+
+        return cameras[0].id;
+
+      }
+
+      catch (error) {
+
+        console.error(
+          "GET CAMERAS ERROR:",
+          error
+        );
+
+        return null;
+
+      }
+
+    }
+
+
+    /********************************************************************
+     * STOP SCANNER
+     ********************************************************************/
+
+    async function stopScanner() {
+
+      scannerRunning = false;
+
+      selectedCameraId = null;
+
+      if (!html5QrCode) {
+
+        $("stopButton").disabled = true;
+
+        $("startButton").disabled = false;
+
+        return;
+
+      }
+
+
+      try {
+
+        await html5QrCode.stop();
+
+      }
+
+      catch (error) {
+
+        console.warn(
+          "SCANNER STOP WARNING:",
+          error
+        );
+
+      }
+
+
+      try {
+
+        await html5QrCode.clear();
+
+      }
+
+      catch (error) {
+
+        console.warn(
+          "SCANNER CLEAR WARNING:",
+          error
+        );
+
+      }
+
+
+      html5QrCode = null;
+
+      $("reader").innerHTML = "";
+
+      $("stopButton").disabled = true;
+
+      $("startButton").disabled = false;
+
+      setSystemStatus(
+        "Scanner stopped",
+        "online"
+      );
+
+    }
+
+
+    /********************************************************************
      * START SCANNER
+     *
+     * IMPORTANT:
+     * We do NOT call getUserMedia() separately before html5-qrcode.
+     *
+     * html5-qrcode itself requests camera permission.
+     *
+     * This avoids:
+     *
+     * getUserMedia()
+     *      ↓
+     * stop camera
+     *      ↓
+     * open camera again
+     *
+     * which can cause camera conflicts on some iPhone/iPad/Android
+     * browsers.
      ********************************************************************/
 
     async function startScanner() {
@@ -1455,11 +1368,9 @@
 
       startingScanner = true;
 
-
       hideMessage();
 
       hideEmailStatus();
-
 
       $("cameraHelp")
         .classList
@@ -1474,23 +1385,23 @@
 
         startingScanner = false;
 
-
         setSystemStatus(
           "Camera unavailable",
           "error"
         );
 
-
         $("cameraHelp")
           .classList
           .add("visible");
 
+        showCameraDiagnostic(
+          support.message
+        );
 
         showMessage(
           support.message,
           "error"
         );
-
 
         return;
 
@@ -1500,39 +1411,30 @@
       try {
 
         setSystemStatus(
-          "Checking camera...",
+          "Requesting camera...",
           "online"
         );
 
-
         showCameraDiagnostic(
-          "Requesting camera..."
+          "Requesting camera permission..."
         );
 
 
         /*
-         * If another scanner exists, stop it first.
+         * Make sure old scanner is completely stopped.
          */
 
         if (html5QrCode) {
 
           try {
-
             await html5QrCode.stop();
-
           }
-
           catch (ignore) {}
-
 
           try {
-
             await html5QrCode.clear();
-
           }
-
           catch (ignore) {}
-
 
           html5QrCode = null;
 
@@ -1543,61 +1445,7 @@
 
 
         /*
-         * IMPORTANT:
-         *
-         * We do NOT use:
-         *
-         * navigator.permissions.query({
-         *   name: "camera"
-         * })
-         *
-         * because that can report a permission state
-         * that does not accurately tell us whether
-         * getUserMedia() can actually start.
-         *
-         * We directly test the real camera API.
-         */
-
-        let permissionStream = null;
-
-
-        try {
-
-          permissionStream =
-            await requestCameraStream();
-
-        }
-
-        catch (permissionError) {
-
-          const details =
-            getCameraErrorDetails(
-              permissionError
-            );
-
-
-          throw permissionError;
-
-        }
-
-
-        /*
-         * Stop the temporary stream.
-         *
-         * html5-qrcode will open the camera again
-         * for the actual scanner.
-         */
-
-        stopMediaStream(
-          permissionStream
-        );
-
-
-        permissionStream = null;
-
-
-        /*
-         * Create scanner.
+         * Create new scanner.
          */
 
         createScanner();
@@ -1607,23 +1455,23 @@
           getScannerConfig();
 
 
-        setSystemStatus(
-          "Starting rear camera...",
-          "online"
-        );
-
-
         /*
-         * METHOD 1
+         * FIRST METHOD
          *
-         * Direct environment camera.
-         *
-         * Use the standard form:
-         *
-         * { facingMode: "environment" }
+         * Ask html5-qrcode to use the rear/environment camera.
          */
 
         try {
+
+          setSystemStatus(
+            "Starting rear camera...",
+            "online"
+          );
+
+          showCameraDiagnostic(
+            "Starting rear/environment camera..."
+          );
+
 
           await html5QrCode.start(
 
@@ -1640,6 +1488,35 @@
 
           );
 
+
+          scannerRunning = true;
+
+          startingScanner = false;
+
+          $("startButton").disabled = true;
+
+          $("stopButton").disabled = false;
+
+          $("cameraHelp")
+            .classList
+            .remove("visible");
+
+          setSystemStatus(
+            "Scanner ready",
+            "online"
+          );
+
+          showCameraDiagnostic(
+            "Camera is active."
+          );
+
+          showMessage(
+            "READY — SCAN QR CODE",
+            "info"
+          );
+
+          return;
+
         }
 
         catch (environmentError) {
@@ -1650,23 +1527,23 @@
           );
 
 
-          const environmentDetails =
+          const details =
             getCameraErrorDetails(
               environmentError
             );
 
 
           showCameraDiagnostic(
-            environmentDetails.name +
+            details.name +
             " — " +
-            environmentDetails.message
+            details.message
           );
 
 
           /*
-           * METHOD 2
+           * SECOND METHOD
            *
-           * Try an actual camera ID.
+           * Get an actual camera ID.
            */
 
           selectedCameraId =
@@ -1680,21 +1557,18 @@
           }
 
 
+          /*
+           * Recreate scanner before camera-ID start.
+           */
+
           try {
-
             await html5QrCode.stop();
-
           }
-
           catch (ignore) {}
 
-
           try {
-
             await html5QrCode.clear();
-
           }
-
           catch (ignore) {}
 
 
@@ -1707,6 +1581,10 @@
           setSystemStatus(
             "Starting available camera...",
             "online"
+          );
+
+          showCameraDiagnostic(
+            "Trying available camera..."
           );
 
 
@@ -1722,37 +1600,34 @@
 
           );
 
+
+          scannerRunning = true;
+
+          startingScanner = false;
+
+          $("startButton").disabled = true;
+
+          $("stopButton").disabled = false;
+
+          $("cameraHelp")
+            .classList
+            .remove("visible");
+
+          setSystemStatus(
+            "Scanner ready",
+            "online"
+          );
+
+          showCameraDiagnostic(
+            "Camera is active."
+          );
+
+          showMessage(
+            "READY — SCAN QR CODE",
+            "info"
+          );
+
         }
-
-
-        scannerRunning = true;
-
-        startingScanner = false;
-
-
-        $("startButton").disabled = true;
-
-        $("stopButton").disabled = false;
-
-        $("uploadButton").disabled = true;
-
-
-        setSystemStatus(
-          "Scanner ready",
-          "online"
-        );
-
-
-        showCameraDiagnostic(
-          "Camera is running."
-        );
-
-
-        showMessage(
-          "READY — I-scan ang QR Code.",
-          "info"
-        );
-
 
       }
 
@@ -1764,22 +1639,49 @@
         );
 
 
+        scannerRunning = false;
+
+        startingScanner = false;
+
+
         const details =
           getCameraErrorDetails(
             error
           );
 
 
-        startingScanner = false;
+        showCameraDiagnostic(
+          details.name +
+          " — " +
+          details.message
+        );
 
-        scannerRunning = false;
+
+        if (
+          html5QrCode
+        ) {
+
+          try {
+            await html5QrCode.stop();
+          }
+          catch (ignore) {}
+
+          try {
+            await html5QrCode.clear();
+          }
+          catch (ignore) {}
+
+        }
+
+
+        html5QrCode = null;
+
+        $("reader").innerHTML = "";
 
 
         $("startButton").disabled = false;
 
         $("stopButton").disabled = true;
-
-        $("uploadButton").disabled = false;
 
 
         setSystemStatus(
@@ -1793,60 +1695,37 @@
           .add("visible");
 
 
-        showCameraDiagnostic(
-          details.name +
-          " — " +
-          details.message
-        );
-
-
-        let cameraMessage =
-          "HINDI MA-ACCESS ANG CAMERA.";
+        let userMessage =
+          "CAMERA COULD NOT BE STARTED.";
 
 
         if (
           details.name ===
-          "NotAllowedError" ||
-          details.name ===
-          "PermissionDeniedError"
+          "NotAllowedError"
         ) {
 
-          cameraMessage =
-            "CAMERA ACCESS BLOCKED. Please allow Camera for this GitHub Pages website, then reload Safari/Chrome and press START SCANNER again.";
+          userMessage =
+            "CAMERA PERMISSION DENIED. Allow camera access for this GitHub Pages site, then reload the page.";
 
         }
 
         else if (
           details.name ===
-          "NotFoundError" ||
-          details.name ===
-          "DevicesNotFoundError"
+          "NotFoundError"
         ) {
 
-          cameraMessage =
-            "WALANG AVAILABLE CAMERA na nakita sa device.";
+          userMessage =
+            "NO CAMERA WAS FOUND ON THIS DEVICE.";
 
         }
 
         else if (
           details.name ===
-          "NotReadableError" ||
-          details.name ===
-          "TrackStartError"
+          "NotReadableError"
         ) {
 
-          cameraMessage =
-            "HINDI MABUKSAN ANG CAMERA. Baka ginagamit ito ng ibang application. Close other apps using the camera, then try again.";
-
-        }
-
-        else if (
-          details.name ===
-          "SecurityError"
-        ) {
-
-          cameraMessage =
-            "CAMERA ACCESS BLOCKED BY BROWSER SECURITY. Make sure this GitHub Pages website is opened using HTTPS.";
+          userMessage =
+            "CAMERA IS BUSY OR CANNOT BE READ. Close other apps using the camera, then try again.";
 
         }
 
@@ -1855,36 +1734,27 @@
           "OverconstrainedError"
         ) {
 
-          cameraMessage =
-            "CAMERA CONFIGURATION NOT SUPPORTED. Trying another available camera may be required.";
+          userMessage =
+            "THE SELECTED CAMERA IS NOT AVAILABLE. Trying another camera may be required.";
 
         }
 
         else if (
           details.name ===
-          "AbortError"
+          "SecurityError"
         ) {
 
-          cameraMessage =
-            "CAMERA START WAS INTERRUPTED. Close other camera apps and press START SCANNER again.";
+          userMessage =
+            "BROWSER SECURITY BLOCKED CAMERA ACCESS. Open this website directly using HTTPS.";
 
         }
-
-        else if (
-          details.name ===
-          "InvalidStateError"
-        ) {
-
-          cameraMessage =
-            "CAMERA REQUEST WAS INTERRUPTED BECAUSE THE PAGE WAS NOT ACTIVE. Keep this page open and press START SCANNER again.";
-
-        }
-
 
         showMessage(
-          cameraMessage,
+          userMessage,
           "error"
         );
+
+        playErrorSound();
 
       }
 
@@ -1892,24 +1762,408 @@
 
 
     /********************************************************************
-     * STOP CAMERA
+     * QR SCAN SUCCESS
      ********************************************************************/
 
-    async function stopScanner() {
+    function onScanSuccess(
+      decodedText,
+      decodedResult
+    ) {
 
-      startingScanner = false;
+      const qr =
+        String(
+          decodedText || ""
+        ).trim();
 
 
-      if (!html5QrCode) {
+      if (!qr) {
+        return;
+      }
 
-        scannerRunning = false;
+
+      const now =
+        Date.now();
 
 
-        $("startButton").disabled = false;
+      if (processingScan) {
+        return;
+      }
 
-        $("stopButton").disabled = true;
 
-        $("uploadButton").disabled = false;
+      if (
+        qr === lastScannedQR &&
+        (
+          now -
+          lastScanTime
+        ) <
+        SCAN_COOLDOWN
+      ) {
+
+        return;
+
+      }
+
+
+      lastScannedQR = qr;
+
+      lastScanTime = now;
+
+      processingScan = true;
+
+
+      processQR(qr);
+
+    }
+
+
+    /********************************************************************
+     * QR SCAN FAILURE
+     ********************************************************************/
+
+    function onScanFailure(errorMessage) {
+
+      /*
+       * html5-qrcode continuously calls this when no QR
+       * is detected. We intentionally ignore it.
+       */
+
+    }
+
+
+    /********************************************************************
+     * PROCESS QR
+     ********************************************************************/
+
+    function processQR(qr) {
+
+      showLoading(true);
+
+      hideMessage();
+
+      hideEmailStatus();
+
+
+      setSystemStatus(
+        "Processing QR Code...",
+        "online"
+      );
+
+
+      const callbackName =
+        "cgfleetCallback_" +
+        Date.now() +
+        "_" +
+        Math.floor(
+          Math.random() *
+          100000
+        );
+
+
+      let script = null;
+
+      let completed = false;
+
+
+      function cleanup() {
+
+        if (script) {
+
+          script.remove();
+
+          script = null;
+
+        }
+
+
+        try {
+
+          delete window[
+            callbackName
+          ];
+
+        }
+
+        catch (ignore) {
+
+          window[
+            callbackName
+          ] = undefined;
+
+        }
+
+      }
+
+
+      const timeout =
+        setTimeout(
+          function() {
+
+            if (completed) {
+              return;
+            }
+
+
+            completed = true;
+
+            cleanup();
+
+            showLoading(false);
+
+            processingScan = false;
+
+
+            setSystemStatus(
+              "Connection timeout",
+              "error"
+            );
+
+
+            showMessage(
+              "CONNECTION TIMEOUT. Please try scanning again.",
+              "error"
+            );
+
+
+            playErrorSound();
+
+          },
+          15000
+        );
+
+
+      window[
+        callbackName
+      ] =
+        function(result) {
+
+          if (completed) {
+            return;
+          }
+
+
+          completed = true;
+
+          clearTimeout(
+            timeout
+          );
+
+          cleanup();
+
+
+          showLoading(false);
+
+
+          handleScanResult(
+            result
+          );
+
+        };
+
+
+      script =
+        document.createElement(
+          "script"
+        );
+
+
+      const url =
+        GOOGLE_SCRIPT_URL +
+        "?action=processScan" +
+        "&qr=" +
+        encodeURIComponent(qr) +
+        "&callback=" +
+        encodeURIComponent(
+          callbackName
+        ) +
+        "&_=" +
+        Date.now();
+
+
+      script.src = url;
+
+      script.async = true;
+
+
+      script.onerror =
+        function() {
+
+          if (completed) {
+            return;
+          }
+
+
+          completed = true;
+
+          clearTimeout(
+            timeout
+          );
+
+          cleanup();
+
+          showLoading(false);
+
+          processingScan = false;
+
+
+          setSystemStatus(
+            "Connection error",
+            "error"
+          );
+
+
+          showMessage(
+            "CANNOT CONNECT TO CGFLEET MONITORING SYSTEM.",
+            "error"
+          );
+
+
+          playErrorSound();
+
+        };
+
+
+      document.body.appendChild(
+        script
+      );
+
+    }
+
+
+    /********************************************************************
+     * HANDLE SCAN RESULT
+     ********************************************************************/
+
+    function handleScanResult(result) {
+
+      if (
+        !result ||
+        typeof result !== "object"
+      ) {
+
+        processingScan = false;
+
+        setSystemStatus(
+          "Invalid server response",
+          "error"
+        );
+
+        showMessage(
+          "INVALID RESPONSE FROM MONITORING SYSTEM.",
+          "error"
+        );
+
+        playErrorSound();
+
+        return;
+
+      }
+
+
+      /*
+       * SUCCESS
+       */
+
+      if (result.success === true) {
+
+        showResult(
+          result
+        );
+
+
+        if (
+          result.emailSent === true
+        ) {
+
+          showEmailStatus(
+            result.emailMessage ||
+            "QR scan email sent successfully.",
+            true
+          );
+
+        }
+
+        else if (
+          result.emailSent === false
+        ) {
+
+          showEmailStatus(
+            result.emailMessage ||
+            "Scan successful, but no email was sent.",
+            false
+          );
+
+        }
+
+        else {
+
+          hideEmailStatus();
+
+        }
+
+
+        if (
+          result.action ===
+          "TIME IN"
+        ) {
+
+          setSystemStatus(
+            "TIME IN recorded",
+            "online"
+          );
+
+          showMessage(
+            "TIME IN SUCCESSFUL",
+            "success"
+          );
+
+          playSuccessSound();
+
+        }
+
+        else if (
+          result.action ===
+          "TIME OUT"
+        ) {
+
+          setSystemStatus(
+            "TIME OUT recorded",
+            "online"
+          );
+
+          showMessage(
+            "TIME OUT SUCCESSFUL",
+            "success"
+          );
+
+          playSuccessSound();
+
+        }
+
+        else {
+
+          setSystemStatus(
+            "Scan successful",
+            "online"
+          );
+
+          showMessage(
+            "SCAN SUCCESSFUL",
+            "success"
+          );
+
+          playSuccessSound();
+
+        }
+
+
+        setTimeout(
+          function() {
+
+            processingScan = false;
+
+          },
+          1200
+        );
 
 
         return;
@@ -1917,73 +2171,263 @@
       }
 
 
-      try {
+      /*
+       * QR NOT REGISTERED
+       */
 
-        if (scannerRunning) {
+      if (
+        result.message ===
+        "QR CODE NOT REGISTERED"
+      ) {
 
-          await html5QrCode.stop();
+        hideResult();
 
-        }
+        hideEmailStatus();
 
-      }
 
-      catch (error) {
-
-        console.warn(
-          "STOP SCANNER ERROR:",
-          error
+        setSystemStatus(
+          "QR not registered",
+          "error"
         );
 
+
+        showMessage(
+          "QR CODE NOT REGISTERED",
+          "error"
+        );
+
+
+        playErrorSound();
+
+
+        setTimeout(
+          function() {
+
+            processingScan = false;
+
+          },
+          1200
+        );
+
+
+        return;
+
       }
 
 
-      try {
+      /*
+       * INVALID QR
+       */
 
-        await html5QrCode.clear();
+      if (
+        result.message ===
+        "INVALID QR CODE"
+      ) {
+
+        hideResult();
+
+        hideEmailStatus();
+
+
+        setSystemStatus(
+          "Invalid QR Code",
+          "error"
+        );
+
+
+        showMessage(
+          "INVALID QR CODE",
+          "error"
+        );
+
+
+        playErrorSound();
+
+
+        setTimeout(
+          function() {
+
+            processingScan = false;
+
+          },
+          1200
+        );
+
+
+        return;
 
       }
 
-      catch (ignore) {}
 
+      /*
+       * OTHER ERROR
+       */
 
-      html5QrCode = null;
+      hideResult();
 
-      scannerRunning = false;
-
-      selectedCameraId = null;
-
-
-      $("reader").innerHTML = "";
-
-
-      $("startButton").disabled = false;
-
-      $("stopButton").disabled = true;
-
-      $("uploadButton").disabled = false;
+      hideEmailStatus();
 
 
       setSystemStatus(
-        "Scanner stopped",
-        ""
-      );
-
-
-      showCameraDiagnostic(
-        "Camera stopped."
+        "System error",
+        "error"
       );
 
 
       showMessage(
-        "Scanner stopped.",
-        "info"
+        result.message ||
+        "SYSTEM ERROR",
+        "error"
+      );
+
+
+      playErrorSound();
+
+
+      setTimeout(
+        function() {
+
+          processingScan = false;
+
+        },
+        1200
       );
 
     }
 
 
     /********************************************************************
-     * OPEN QR FILE PICKER
+     * SHOW RESULT
+     ********************************************************************/
+
+    function showResult(result) {
+
+      const card =
+        $("resultCard");
+
+
+      const header =
+        $("resultHeader");
+
+
+      card.classList.add(
+        "visible"
+      );
+
+
+      header.className =
+        "result-header";
+
+
+      if (
+        result.action ===
+        "TIME IN"
+      ) {
+
+        header.textContent =
+          "✓ TIME IN";
+
+        header.classList.add(
+          "time-in"
+        );
+
+      }
+
+      else if (
+        result.action ===
+        "TIME OUT"
+      ) {
+
+        header.textContent =
+          "✓ TIME OUT";
+
+        header.classList.add(
+          "time-out"
+        );
+
+      }
+
+      else {
+
+        header.textContent =
+          "SCAN SUCCESSFUL";
+
+      }
+
+
+      $("personName").textContent =
+        safeText(
+          result.name
+        );
+
+
+      $("resultQR").textContent =
+        safeText(
+          result.qr ||
+          result.plate ||
+          result.serial
+        );
+
+
+      $("resultOffice").textContent =
+        safeText(
+          result.office
+        );
+
+
+      $("resultContact").textContent =
+        safeText(
+          result.contact
+        );
+
+
+      $("resultVehicle").textContent =
+        safeText(
+          result.vehicle
+        );
+
+
+      $("resultColor").textContent =
+        safeText(
+          result.color
+        );
+
+
+      $("resultPlate").textContent =
+        safeText(
+          result.plate
+        );
+
+
+      $("resultRegistered").textContent =
+        safeText(
+          result.registeredDate
+        );
+
+
+      $("resultDateTime").textContent =
+        safeText(
+          result.dateTime
+        );
+
+    }
+
+
+    /********************************************************************
+     * HIDE RESULT
+     ********************************************************************/
+
+    function hideResult() {
+
+      $("resultCard")
+        .classList
+        .remove("visible");
+
+    }
+
+
+    /********************************************************************
+     * UPLOAD QR IMAGE
      ********************************************************************/
 
     function openQRFilePicker() {
@@ -2006,7 +2450,7 @@
 
 
     /********************************************************************
-     * HANDLE QR IMAGE FILE
+     * HANDLE QR IMAGE
      ********************************************************************/
 
     async function handleQRFile(file) {
@@ -2021,7 +2465,9 @@
 
       if (
         !file.type ||
-        !file.type.startsWith("image/")
+        !file.type.startsWith(
+          "image/"
+        )
       ) {
 
         showMessage(
@@ -2173,722 +2619,76 @@
 
 
     /********************************************************************
-     * CAMERA QR SUCCESS
-     ********************************************************************/
-
-    function onScanSuccess(
-      decodedText,
-      decodedResult
-    ) {
-
-      const qr =
-        String(
-          decodedText || ""
-        ).trim();
-
-
-      if (!qr) {
-        return;
-      }
-
-
-      const now =
-        Date.now();
-
-
-      if (processingScan) {
-        return;
-      }
-
-
-      if (
-        qr === lastScannedQR &&
-        (now - lastScanTime) <
-          SCAN_COOLDOWN
-      ) {
-
-        return;
-
-      }
-
-
-      lastScannedQR = qr;
-
-      lastScanTime = now;
-
-      processingScan = true;
-
-
-      processQR(qr);
-
-    }
-
-
-    /********************************************************************
-     * CAMERA SCAN FAILURE
-     ********************************************************************/
-
-    function onScanFailure(errorMessage) {
-
-      /*
-       * Continuous "QR not found" messages
-       * are intentionally ignored.
-       */
-
-    }
-
-
-    /********************************************************************
-     * PROCESS QR THROUGH APPS SCRIPT
-     ********************************************************************/
-
-    function processQR(qr) {
-
-      showLoading(true);
-
-      hideMessage();
-
-      hideEmailStatus();
-
-
-      setSystemStatus(
-        "Processing QR Code...",
-        "online"
-      );
-
-
-      const callbackName =
-        "cgfleetCallback_" +
-        Date.now() +
-        "_" +
-        Math.floor(
-          Math.random() * 100000
-        );
-
-
-      let script = null;
-
-      let completed = false;
-
-
-      const timeout =
-        setTimeout(
-          function() {
-
-            if (completed) {
-              return;
-            }
-
-
-            completed = true;
-
-            cleanup();
-
-            showLoading(false);
-
-            processingScan = false;
-
-
-            setSystemStatus(
-              "Connection timeout",
-              "error"
-            );
-
-
-            showMessage(
-              "SERVER TIMEOUT — Pakiscan muli.",
-              "error"
-            );
-
-          },
-          15000
-        );
-
-
-      window[callbackName] =
-        function(result) {
-
-          if (completed) {
-            return;
-          }
-
-
-          completed = true;
-
-          clearTimeout(timeout);
-
-          cleanup();
-
-          showLoading(false);
-
-          processingScan = false;
-
-
-          handleScanResult(result);
-
-        };
-
-
-      script =
-        document.createElement(
-          "script"
-        );
-
-
-      const url =
-        GOOGLE_SCRIPT_URL +
-        "?action=processScan" +
-        "&qr=" +
-        encodeURIComponent(qr) +
-        "&callback=" +
-        encodeURIComponent(callbackName) +
-        "&_=" +
-        Date.now();
-
-
-      script.src = url;
-
-      script.async = true;
-
-
-      script.onerror =
-        function() {
-
-          if (completed) {
-            return;
-          }
-
-
-          completed = true;
-
-          clearTimeout(timeout);
-
-          cleanup();
-
-          showLoading(false);
-
-          processingScan = false;
-
-
-          setSystemStatus(
-            "Server connection error",
-            "error"
-          );
-
-
-          showMessage(
-            "SERVER CONNECTION ERROR — Pakiscan muli.",
-            "error"
-          );
-
-        };
-
-
-      document.body.appendChild(
-        script
-      );
-
-
-      function cleanup() {
-
-        if (
-          script &&
-          script.parentNode
-        ) {
-
-          script.parentNode.removeChild(
-            script
-          );
-
-        }
-
-
-        try {
-
-          delete window[
-            callbackName
-          ];
-
-        }
-
-        catch (ignore) {
-
-          window[callbackName] =
-            undefined;
-
-        }
-
-      }
-
-    }
-
-
-    /********************************************************************
-     * HANDLE SERVER RESULT
-     ********************************************************************/
-
-    function handleScanResult(result) {
-
-      console.log(
-        "SERVER RESULT:",
-        result
-      );
-
-
-      if (!result) {
-
-        setSystemStatus(
-          "Invalid server response",
-          "error"
-        );
-
-
-        showMessage(
-          "INVALID SERVER RESPONSE",
-          "error"
-        );
-
-
-        return;
-
-      }
-
-
-      /**************************************************************
-       * SUCCESS
-       **************************************************************/
-
-      if (result.success === true) {
-
-        showResult(result);
-
-
-        if (result.emailSent === true) {
-
-          showEmailStatus(
-            result.emailMessage ||
-            "Your QR Code was successfully scanned at CGFLEET Parking and Monitoring System.",
-            true
-          );
-
-        }
-
-        else if (
-          result.emailSent === false
-        ) {
-
-          showEmailStatus(
-            result.emailMessage ||
-            "Scan successful, but no email was sent.",
-            false
-          );
-
-        }
-
-        else {
-
-          hideEmailStatus();
-
-        }
-
-
-        if (
-          result.action ===
-          "TIME IN"
-        ) {
-
-          setSystemStatus(
-            "TIME IN recorded",
-            "online"
-          );
-
-
-          showMessage(
-            "TIME IN SUCCESSFUL",
-            "success"
-          );
-
-
-          playSuccessSound();
-
-        }
-
-
-        else if (
-          result.action ===
-          "TIME OUT"
-        ) {
-
-          setSystemStatus(
-            "TIME OUT recorded",
-            "online"
-          );
-
-
-          showMessage(
-            "TIME OUT SUCCESSFUL",
-            "success"
-          );
-
-
-          playSuccessSound();
-
-        }
-
-
-        else {
-
-          setSystemStatus(
-            "Scan successful",
-            "online"
-          );
-
-
-          showMessage(
-            "SCAN SUCCESSFUL",
-            "success"
-          );
-
-
-          playSuccessSound();
-
-        }
-
-
-        setTimeout(
-          function() {
-
-            processingScan = false;
-
-          },
-          1200
-        );
-
-
-        return;
-
-      }
-
-
-      /**************************************************************
-       * QR NOT REGISTERED
-       **************************************************************/
-
-      if (
-        result.message ===
-        "QR CODE NOT REGISTERED"
-      ) {
-
-        hideResult();
-
-        hideEmailStatus();
-
-
-        setSystemStatus(
-          "QR not registered",
-          "error"
-        );
-
-
-        showMessage(
-          "QR CODE NOT REGISTERED",
-          "error"
-        );
-
-
-        playErrorSound();
-
-
-        setTimeout(
-          function() {
-
-            processingScan = false;
-
-          },
-          1200
-        );
-
-
-        return;
-
-      }
-
-
-      /**************************************************************
-       * INVALID QR
-       **************************************************************/
-
-      if (
-        result.message ===
-        "INVALID QR CODE"
-      ) {
-
-        hideResult();
-
-        hideEmailStatus();
-
-
-        setSystemStatus(
-          "Invalid QR Code",
-          "error"
-        );
-
-
-        showMessage(
-          "INVALID QR CODE",
-          "error"
-        );
-
-
-        playErrorSound();
-
-
-        setTimeout(
-          function() {
-
-            processingScan = false;
-
-          },
-          1200
-        );
-
-
-        return;
-
-      }
-
-
-      /**************************************************************
-       * OTHER ERROR
-       **************************************************************/
-
-      hideResult();
-
-      hideEmailStatus();
-
-
-      setSystemStatus(
-        "System error",
-        "error"
-      );
-
-
-      showMessage(
-        result.message ||
-        "SYSTEM ERROR",
-        "error"
-      );
-
-
-      playErrorSound();
-
-
-      setTimeout(
-        function() {
-
-          processingScan = false;
-
-        },
-        1200
-      );
-
-    }
-
-
-    /********************************************************************
-     * SHOW RESULT
-     ********************************************************************/
-
-    function showResult(result) {
-
-      const card =
-        $("resultCard");
-
-
-      const header =
-        $("resultHeader");
-
-
-      card.classList.add(
-        "visible"
-      );
-
-
-      header.className =
-        "result-header";
-
-
-      if (
-        result.action ===
-        "TIME IN"
-      ) {
-
-        header.textContent =
-          "✓ TIME IN";
-
-
-        header.classList.add(
-          "time-in"
-        );
-
-      }
-
-
-      else if (
-        result.action ===
-        "TIME OUT"
-      ) {
-
-        header.textContent =
-          "✓ TIME OUT";
-
-
-        header.classList.add(
-          "time-out"
-        );
-
-      }
-
-
-      else {
-
-        header.textContent =
-          "SCAN SUCCESSFUL";
-
-      }
-
-
-      $("personName").textContent =
-        safeText(
-          result.name
-        );
-
-
-      $("resultQR").textContent =
-        safeText(
-          result.qr ||
-          result.plate ||
-          result.serial
-        );
-
-
-      $("resultOffice").textContent =
-        safeText(
-          result.office
-        );
-
-
-      $("resultContact").textContent =
-        safeText(
-          result.contact
-        );
-
-
-      $("resultVehicle").textContent =
-        safeText(
-          result.vehicle
-        );
-
-
-      $("resultColor").textContent =
-        safeText(
-          result.color
-        );
-
-
-      $("resultPlate").textContent =
-        safeText(
-          result.plate
-        );
-
-
-      $("resultRegistered").textContent =
-        safeText(
-          result.registeredDate
-        );
-
-
-      $("resultDateTime").textContent =
-        safeText(
-          result.dateTime
-        );
-
-    }
-
-
-    /********************************************************************
-     * HIDE RESULT
-     ********************************************************************/
-
-    function hideResult() {
-
-      $("resultCard")
-        .classList
-        .remove("visible");
-
-    }
-
-
-    /********************************************************************
-     * SUCCESS SOUND
+     * SOUND
      ********************************************************************/
 
     function playSuccessSound() {
 
       try {
 
-        const AudioContext =
+        const AudioContextClass =
           window.AudioContext ||
           window.webkitAudioContext;
 
 
-        if (!AudioContext) {
+        if (!AudioContextClass) {
           return;
         }
 
 
-        const ctx =
-          new AudioContext();
+        const context =
+          new AudioContextClass();
 
 
         const oscillator =
-          ctx.createOscillator();
+          context.createOscillator();
 
 
         const gain =
-          ctx.createGain();
+          context.createGain();
 
 
         oscillator.type =
           "sine";
 
 
-        oscillator.frequency.value =
-          880;
+        oscillator.frequency.setValueAtTime(
+          880,
+          context.currentTime
+        );
+
+
+        oscillator.frequency.setValueAtTime(
+          1174,
+          context.currentTime + 0.12
+        );
 
 
         gain.gain.setValueAtTime(
           0.0001,
-          ctx.currentTime
+          context.currentTime
         );
 
 
         gain.gain.exponentialRampToValueAtTime(
-          0.25,
-          ctx.currentTime + 0.02
+          0.2,
+          context.currentTime + 0.02
         );
 
 
         gain.gain.exponentialRampToValueAtTime(
           0.0001,
-          ctx.currentTime + 0.30
+          context.currentTime + 0.3
         );
 
 
-        oscillator.connect(gain);
+        oscillator.connect(
+          gain
+        );
+
 
         gain.connect(
-          ctx.destination
+          context.destination
         );
 
 
@@ -2896,15 +2696,16 @@
 
 
         oscillator.stop(
-          ctx.currentTime + 0.30
+          context.currentTime + 0.3
         );
 
       }
 
       catch (error) {
 
-        console.log(
-          "Audio unavailable"
+        console.warn(
+          "SUCCESS SOUND ERROR:",
+          error
         );
 
       }
@@ -2912,66 +2713,67 @@
     }
 
 
-    /********************************************************************
-     * ERROR SOUND
-     ********************************************************************/
-
     function playErrorSound() {
 
       try {
 
-        const AudioContext =
+        const AudioContextClass =
           window.AudioContext ||
           window.webkitAudioContext;
 
 
-        if (!AudioContext) {
+        if (!AudioContextClass) {
           return;
         }
 
 
-        const ctx =
-          new AudioContext();
+        const context =
+          new AudioContextClass();
 
 
         const oscillator =
-          ctx.createOscillator();
+          context.createOscillator();
 
 
         const gain =
-          ctx.createGain();
+          context.createGain();
 
 
         oscillator.type =
           "square";
 
 
-        oscillator.frequency.value =
-          220;
+        oscillator.frequency.setValueAtTime(
+          220,
+          context.currentTime
+        );
 
 
         gain.gain.setValueAtTime(
           0.0001,
-          ctx.currentTime
+          context.currentTime
         );
 
 
         gain.gain.exponentialRampToValueAtTime(
           0.15,
-          ctx.currentTime + 0.02
+          context.currentTime + 0.02
         );
 
 
         gain.gain.exponentialRampToValueAtTime(
           0.0001,
-          ctx.currentTime + 0.25
+          context.currentTime + 0.25
         );
 
 
-        oscillator.connect(gain);
+        oscillator.connect(
+          gain
+        );
+
 
         gain.connect(
-          ctx.destination
+          context.destination
         );
 
 
@@ -2979,15 +2781,16 @@
 
 
         oscillator.stop(
-          ctx.currentTime + 0.25
+          context.currentTime + 0.25
         );
 
       }
 
       catch (error) {
 
-        console.log(
-          "Audio unavailable"
+        console.warn(
+          "ERROR SOUND ERROR:",
+          error
         );
 
       }
@@ -2996,136 +2799,116 @@
 
 
     /********************************************************************
-     * BUTTON EVENTS
+     * INITIALIZE
      ********************************************************************/
 
-    $("startButton")
-      .addEventListener(
-        "click",
-        function() {
+    function initialize() {
 
-          startScanner();
-
-        }
+      setSystemStatus(
+        "Monitoring system ready",
+        "online"
       );
 
 
-    $("stopButton")
-      .addEventListener(
-        "click",
-        function() {
+      /*
+       * Do not request camera permission automatically.
+       *
+       * Camera permission must be requested after the user
+       * presses START SCANNER.
+       */
 
-          stopScanner();
-
-        }
+      showCameraDiagnostic(
+        "Waiting for START SCANNER."
       );
 
 
-    $("uploadButton")
-      .addEventListener(
-        "click",
-        function() {
-
-          openQRFilePicker();
-
-        }
-      );
+      $("startButton")
+        .addEventListener(
+          "click",
+          startScanner
+        );
 
 
-    $("qrFileInput")
-      .addEventListener(
-        "change",
-        function() {
-
-          const file =
-            this.files &&
-            this.files.length
-              ? this.files[0]
-              : null;
+      $("stopButton")
+        .addEventListener(
+          "click",
+          stopScanner
+        );
 
 
-          handleQRFile(file);
+      $("uploadButton")
+        .addEventListener(
+          "click",
+          openQRFilePicker
+        );
 
-        }
-      );
+
+      $("qrFileInput")
+        .addEventListener(
+          "change",
+          function(event) {
+
+            const file =
+              event.target.files &&
+              event.target.files[0];
+
+            handleQRFile(file);
+
+          }
+        );
+
+
+      /*
+       * Basic backend availability check.
+       *
+       * This does not use fetch because Apps Script
+       * may redirect and CORS is not required for our
+       * JSONP scan process.
+       */
+
+      if (
+        !GOOGLE_SCRIPT_URL ||
+        !GOOGLE_SCRIPT_URL.includes(
+          "/exec"
+        )
+      ) {
+
+        setSystemStatus(
+          "Backend URL error",
+          "error"
+        );
+
+        showMessage(
+          "GOOGLE APPS SCRIPT URL IS NOT CONFIGURED CORRECTLY.",
+          "error"
+        );
+
+      }
+
+    }
 
 
     /********************************************************************
      * PAGE LOAD
      ********************************************************************/
 
-    document.addEventListener(
-      "DOMContentLoaded",
-      function() {
+    if (
+      document.readyState ===
+      "loading"
+    ) {
 
-        setSystemStatus(
-          "Ready — start scanner",
-          ""
-        );
+      document.addEventListener(
+        "DOMContentLoaded",
+        initialize
+      );
 
+    }
 
-        hideEmailStatus();
+    else {
 
+      initialize();
 
-        /*
-         * Do not request camera permission automatically.
-         *
-         * The START SCANNER button is the user action
-         * that starts the camera request.
-         */
-
-      }
-    );
-
-
-    /********************************************************************
-     * PAGE VISIBILITY
-     ********************************************************************/
-
-    document.addEventListener(
-      "visibilitychange",
-      function() {
-
-        if (
-          document.hidden &&
-          scannerRunning
-        ) {
-
-          console.log(
-            "Page hidden while scanner is running."
-          );
-
-        }
-
-      }
-    );
-
-
-    /********************************************************************
-     * CLEANUP
-     ********************************************************************/
-
-    window.addEventListener(
-      "beforeunload",
-      function() {
-
-        if (
-          html5QrCode &&
-          scannerRunning
-        ) {
-
-          try {
-
-            html5QrCode.stop();
-
-          }
-
-          catch (ignore) {}
-
-        }
-
-      }
-    );
+    }
 
   </script>
 
