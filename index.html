@@ -43,7 +43,7 @@
       margin: 0 auto;
       min-height: 100vh;
       background: #fff;
-      box-shadow: 0 0 25px rgba(0,0,0,0.08);
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.08);
     }
 
     /* HEADER */
@@ -102,7 +102,7 @@
 
     .status-dot.online {
       background: #00c853;
-      box-shadow: 0 0 8px rgba(0,200,83,0.7);
+      box-shadow: 0 0 8px rgba(0, 200, 83, 0.7);
     }
 
     .status-dot.error {
@@ -260,6 +260,32 @@
 
     .scan-message.warning {
       display: block;
+      background: #fff2cc;
+      color: #8a6200;
+    }
+
+    /* EMAIL STATUS */
+
+    .email-status {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 800;
+      display: none;
+    }
+
+    .email-status.visible {
+      display: block;
+    }
+
+    .email-status.sent {
+      background: #e6f7e6;
+      color: #087508;
+    }
+
+    .email-status.not-sent {
       background: #fff2cc;
       color: #8a6200;
     }
@@ -452,6 +478,7 @@
       class="camera-help">
 
       <strong>Camera access required.</strong>
+
       <br>
 
       Please allow camera permission in your browser.
@@ -470,6 +497,14 @@
     <div
       id="scanMessage"
       class="scan-message">
+    </div>
+
+
+    <!-- EMAIL STATUS -->
+
+    <div
+      id="emailStatus"
+      class="email-status">
     </div>
 
 
@@ -513,7 +548,6 @@
 
 
         <div class="details">
-
 
           <div class="detail-row">
 
@@ -650,7 +684,6 @@
 
           </div>
 
-
         </div>
 
       </div>
@@ -719,12 +752,12 @@
       ">
 
       Camera: iPhone / iPad / Android / Tablet
+
       <br>
 
       Upload: Computer / Laptop / iPhone / iPad / Android / Tablet
 
     </div>
-
 
   </main>
 
@@ -740,17 +773,17 @@
 
 <script>
 
-/************************************************************
+/********************************************************************
  * GOOGLE APPS SCRIPT WEB APP
- ************************************************************/
+ ********************************************************************/
 
 const GOOGLE_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbwuYGfZWDQ5CgNQdld38J4pBqVvM_WZRHCGMGkVEHWeJ51fjf04V8L0NDV-SUcA2hdNpQ/exec";
 
 
-/************************************************************
+/********************************************************************
  * GLOBAL VARIABLES
- ************************************************************/
+ ********************************************************************/
 
 let html5QrCode = null;
 
@@ -765,20 +798,18 @@ let lastScanTime = 0;
 const SCAN_COOLDOWN = 3000;
 
 
-/************************************************************
+/********************************************************************
  * DOM HELPER
- ************************************************************/
+ ********************************************************************/
 
 function $(id) {
-
   return document.getElementById(id);
-
 }
 
 
-/************************************************************
+/********************************************************************
  * SYSTEM STATUS
- ************************************************************/
+ ********************************************************************/
 
 function setSystemStatus(message, type) {
 
@@ -789,23 +820,19 @@ function setSystemStatus(message, type) {
   dot.className = "status-dot";
 
   if (type === "online") {
-
     dot.classList.add("online");
-
   }
 
   if (type === "error") {
-
     dot.classList.add("error");
-
   }
 
 }
 
 
-/************************************************************
+/********************************************************************
  * MESSAGE
- ************************************************************/
+ ********************************************************************/
 
 function showMessage(message, type) {
 
@@ -831,9 +858,47 @@ function hideMessage() {
 }
 
 
-/************************************************************
+/********************************************************************
+ * EMAIL STATUS
+ ********************************************************************/
+
+function showEmailStatus(message, sent) {
+
+  const box = $("emailStatus");
+
+  if (!message) {
+
+    box.textContent = "";
+
+    box.className = "email-status";
+
+    return;
+
+  }
+
+  box.textContent = message;
+
+  box.className =
+    "email-status visible " +
+    (sent ? "sent" : "not-sent");
+
+}
+
+
+function hideEmailStatus() {
+
+  const box = $("emailStatus");
+
+  box.textContent = "";
+
+  box.className = "email-status";
+
+}
+
+
+/********************************************************************
  * LOADING
- ************************************************************/
+ ********************************************************************/
 
 function showLoading(show) {
 
@@ -850,9 +915,9 @@ function showLoading(show) {
 }
 
 
-/************************************************************
+/********************************************************************
  * SAFE TEXT
- ************************************************************/
+ ********************************************************************/
 
 function safeText(value) {
 
@@ -871,25 +936,22 @@ function safeText(value) {
 }
 
 
-/************************************************************
+/********************************************************************
  * START CAMERA SCANNER
- ************************************************************/
+ ********************************************************************/
 
 async function startScanner() {
 
   if (scannerRunning) {
-
     return;
-
   }
 
-
   hideMessage();
+  hideEmailStatus();
 
   $("cameraHelp")
     .classList
     .remove("visible");
-
 
   try {
 
@@ -901,17 +963,13 @@ async function startScanner() {
     if (html5QrCode) {
 
       try {
-
         await html5QrCode.clear();
-
       } catch (ignore) {}
 
     }
 
-
     html5QrCode =
       new Html5Qrcode("reader");
-
 
     const config = {
 
@@ -931,11 +989,8 @@ async function startScanner() {
           );
 
         return {
-
           width: size,
-
           height: size
-
         };
 
       },
@@ -945,7 +1000,6 @@ async function startScanner() {
       disableFlip: false
 
     };
-
 
     await html5QrCode.start(
 
@@ -961,9 +1015,7 @@ async function startScanner() {
 
     );
 
-
     scannerRunning = true;
-
 
     $("startButton").disabled = true;
 
@@ -971,18 +1023,15 @@ async function startScanner() {
 
     $("uploadButton").disabled = true;
 
-
     setSystemStatus(
       "Scanner ready",
       "online"
     );
 
-
     showMessage(
       "READY — I-scan ang QR Code.",
       "info"
     );
-
 
   } catch (error) {
 
@@ -991,9 +1040,7 @@ async function startScanner() {
       error
     );
 
-
     scannerRunning = false;
-
 
     $("startButton").disabled = false;
 
@@ -1001,17 +1048,14 @@ async function startScanner() {
 
     $("uploadButton").disabled = false;
 
-
     setSystemStatus(
       "Camera unavailable",
       "error"
     );
 
-
     $("cameraHelp")
       .classList
       .add("visible");
-
 
     showMessage(
       "Hindi ma-access ang camera. Payagan ang Camera permission.",
@@ -1023,25 +1067,20 @@ async function startScanner() {
 }
 
 
-/************************************************************
+/********************************************************************
  * STOP CAMERA
- ************************************************************/
+ ********************************************************************/
 
 async function stopScanner() {
 
   if (!html5QrCode) {
-
     return;
-
   }
-
 
   try {
 
     if (scannerRunning) {
-
       await html5QrCode.stop();
-
     }
 
   } catch (error) {
@@ -1053,25 +1092,19 @@ async function stopScanner() {
 
   }
 
-
   try {
-
     await html5QrCode.clear();
-
   } catch (ignore) {}
-
 
   html5QrCode = null;
 
   scannerRunning = false;
-
 
   $("startButton").disabled = false;
 
   $("stopButton").disabled = true;
 
   $("uploadButton").disabled = false;
-
 
   setSystemStatus(
     "Scanner stopped",
@@ -1081,9 +1114,9 @@ async function stopScanner() {
 }
 
 
-/************************************************************
+/********************************************************************
  * OPEN QR FILE PICKER
- ************************************************************/
+ ********************************************************************/
 
 function openQRFilePicker() {
 
@@ -1098,15 +1131,14 @@ function openQRFilePicker() {
 
   }
 
-
   $("qrFileInput").click();
 
 }
 
 
-/************************************************************
+/********************************************************************
  * HANDLE QR IMAGE FILE
- ************************************************************/
+ ********************************************************************/
 
 async function handleQRFile(file) {
 
@@ -1117,13 +1149,9 @@ async function handleQRFile(file) {
 
   $("qrFileInput").value = "";
 
-
   if (!file) {
-
     return;
-
   }
-
 
   if (
     !file.type ||
@@ -1139,33 +1167,26 @@ async function handleQRFile(file) {
 
   }
 
-
   /*
    * Stop camera before scanning image.
    */
 
   if (scannerRunning) {
-
     await stopScanner();
-
   }
 
-
   hideMessage();
-
+  hideEmailStatus();
   hideResult();
 
   showLoading(true);
-
 
   setSystemStatus(
     "Reading QR image...",
     "online"
   );
 
-
   processingScan = true;
-
 
   try {
 
@@ -1174,10 +1195,7 @@ async function handleQRFile(file) {
      */
 
     const fileReader =
-      new Html5Qrcode(
-        "reader"
-      );
-
+      new Html5Qrcode("reader");
 
     const decodedText =
       await fileReader.scanFile(
@@ -1185,26 +1203,20 @@ async function handleQRFile(file) {
         true
       );
 
-
     /*
      * Clear temporary reader.
      */
 
     try {
-
       await fileReader.clear();
-
     } catch (ignore) {}
 
-
     showLoading(false);
-
 
     const qr =
       String(
         decodedText || ""
       ).trim();
-
 
     if (!qr) {
 
@@ -1226,14 +1238,12 @@ async function handleQRFile(file) {
 
     }
 
-
     /*
      * Process decoded QR through
      * Apps Script.
      */
 
     processQR(qr);
-
 
   } catch (error) {
 
@@ -1242,23 +1252,19 @@ async function handleQRFile(file) {
       error
     );
 
-
     showLoading(false);
 
     processingScan = false;
-
 
     setSystemStatus(
       "QR image unreadable",
       "error"
     );
 
-
     showMessage(
       "HINDI MABASA ANG QR IMAGE. Gumamit ng mas malinaw na larawan.",
       "error"
     );
-
 
     playErrorSound();
 
@@ -1267,9 +1273,9 @@ async function handleQRFile(file) {
 }
 
 
-/************************************************************
+/********************************************************************
  * CAMERA QR SUCCESS
- ************************************************************/
+ ********************************************************************/
 
 function onScanSuccess(
   decodedText,
@@ -1281,24 +1287,16 @@ function onScanSuccess(
       decodedText || ""
     ).trim();
 
-
   if (!qr) {
-
     return;
-
   }
-
 
   const now =
     Date.now();
 
-
   if (processingScan) {
-
     return;
-
   }
-
 
   if (
     qr === lastScannedQR &&
@@ -1310,22 +1308,20 @@ function onScanSuccess(
 
   }
 
-
   lastScannedQR = qr;
 
   lastScanTime = now;
 
   processingScan = true;
 
-
   processQR(qr);
 
 }
 
 
-/************************************************************
+/********************************************************************
  * CAMERA SCAN FAILURE
- ************************************************************/
+ ********************************************************************/
 
 function onScanFailure(errorMessage) {
 
@@ -1336,22 +1332,21 @@ function onScanFailure(errorMessage) {
 }
 
 
-/************************************************************
+/********************************************************************
  * PROCESS QR THROUGH APPS SCRIPT
- ************************************************************/
+ ********************************************************************/
 
 function processQR(qr) {
 
   showLoading(true);
 
   hideMessage();
-
+  hideEmailStatus();
 
   setSystemStatus(
     "Processing QR Code...",
     "online"
   );
-
 
   const callbackName =
     "cgfleetCallback_" +
@@ -1361,22 +1356,17 @@ function processQR(qr) {
       Math.random() * 100000
     );
 
-
   let script = null;
 
   let completed = false;
-
 
   const timeout =
     setTimeout(
       function() {
 
         if (completed) {
-
           return;
-
         }
-
 
         completed = true;
 
@@ -1386,12 +1376,10 @@ function processQR(qr) {
 
         processingScan = false;
 
-
         setSystemStatus(
           "Connection timeout",
           "error"
         );
-
 
         showMessage(
           "SERVER TIMEOUT — Pakiscan muli.",
@@ -1402,38 +1390,29 @@ function processQR(qr) {
       15000
     );
 
-
   window[callbackName] =
     function(result) {
 
       if (completed) {
-
         return;
-
       }
 
-
       completed = true;
-
 
       clearTimeout(timeout);
 
       cleanup();
 
-
       showLoading(false);
 
       processingScan = false;
-
 
       handleScanResult(result);
 
     };
 
-
   script =
     document.createElement("script");
-
 
   const url =
     GOOGLE_SCRIPT_URL +
@@ -1445,40 +1424,31 @@ function processQR(qr) {
     "&_=" +
     Date.now();
 
-
   script.src = url;
 
   script.async = true;
-
 
   script.onerror =
     function() {
 
       if (completed) {
-
         return;
-
       }
 
-
       completed = true;
-
 
       clearTimeout(timeout);
 
       cleanup();
 
-
       showLoading(false);
 
       processingScan = false;
-
 
       setSystemStatus(
         "Server connection error",
         "error"
       );
-
 
       showMessage(
         "SERVER CONNECTION ERROR — Pakiscan muli.",
@@ -1486,7 +1456,6 @@ function processQR(qr) {
       );
 
     };
-
 
   document.body.appendChild(
     script
@@ -1506,7 +1475,6 @@ function processQR(qr) {
 
     }
 
-
     try {
 
       delete window[callbackName];
@@ -1523,9 +1491,9 @@ function processQR(qr) {
 }
 
 
-/************************************************************
+/********************************************************************
  * HANDLE SERVER RESULT
- ************************************************************/
+ ********************************************************************/
 
 function handleScanResult(result) {
 
@@ -1534,7 +1502,6 @@ function handleScanResult(result) {
     result
   );
 
-
   if (!result) {
 
     setSystemStatus(
@@ -1542,12 +1509,10 @@ function handleScanResult(result) {
       "error"
     );
 
-
     showMessage(
       "INVALID SERVER RESPONSE",
       "error"
     );
-
 
     return;
 
@@ -1562,6 +1527,53 @@ function handleScanResult(result) {
 
     showResult(result);
 
+    /*
+     * SUCCESSFUL EMAIL STATUS
+     *
+     * Code.gs may return:
+     *
+     * emailSent: true
+     * emailMessage: "..."
+     *
+     * or:
+     *
+     * emailSent: false
+     * emailMessage: "No registered email address."
+     */
+
+    if (result.emailSent === true) {
+
+      showEmailStatus(
+        result.emailMessage ||
+        "Automatic scan email sent successfully.",
+        true
+      );
+
+    }
+
+    else if (
+      result.emailSent === false
+    ) {
+
+      showEmailStatus(
+        result.emailMessage ||
+        "Scan successful, but no email was sent.",
+        false
+      );
+
+    }
+
+    else {
+
+      /*
+       * Older Code.gs response without
+       * email information.
+       */
+
+      hideEmailStatus();
+
+    }
+
 
     if (
       result.action === "TIME IN"
@@ -1572,17 +1584,14 @@ function handleScanResult(result) {
         "online"
       );
 
-
       showMessage(
         "TIME IN SUCCESSFUL",
         "success"
       );
 
-
       playSuccessSound();
 
     }
-
 
     else if (
       result.action === "TIME OUT"
@@ -1593,17 +1602,14 @@ function handleScanResult(result) {
         "online"
       );
 
-
       showMessage(
         "TIME OUT SUCCESSFUL",
         "success"
       );
 
-
       playSuccessSound();
 
     }
-
 
     else {
 
@@ -1611,6 +1617,13 @@ function handleScanResult(result) {
         "Scan successful",
         "online"
       );
+
+      showMessage(
+        "SCAN SUCCESSFUL",
+        "success"
+      );
+
+      playSuccessSound();
 
     }
 
@@ -1623,7 +1636,6 @@ function handleScanResult(result) {
       },
       1200
     );
-
 
     return;
 
@@ -1640,22 +1652,19 @@ function handleScanResult(result) {
   ) {
 
     hideResult();
-
+    hideEmailStatus();
 
     setSystemStatus(
       "QR not registered",
       "error"
     );
 
-
     showMessage(
       "QR CODE NOT REGISTERED",
       "error"
     );
 
-
     playErrorSound();
-
 
     setTimeout(
       function() {
@@ -1665,7 +1674,6 @@ function handleScanResult(result) {
       },
       1200
     );
-
 
     return;
 
@@ -1682,22 +1690,19 @@ function handleScanResult(result) {
   ) {
 
     hideResult();
-
+    hideEmailStatus();
 
     setSystemStatus(
       "Invalid QR Code",
       "error"
     );
 
-
     showMessage(
       "INVALID QR CODE",
       "error"
     );
 
-
     playErrorSound();
-
 
     setTimeout(
       function() {
@@ -1707,7 +1712,6 @@ function handleScanResult(result) {
       },
       1200
     );
-
 
     return;
 
@@ -1719,13 +1723,12 @@ function handleScanResult(result) {
    */
 
   hideResult();
-
+  hideEmailStatus();
 
   setSystemStatus(
     "System error",
     "error"
   );
-
 
   showMessage(
     result.message ||
@@ -1733,9 +1736,7 @@ function handleScanResult(result) {
     "error"
   );
 
-
   playErrorSound();
-
 
   setTimeout(
     function() {
@@ -1749,24 +1750,21 @@ function handleScanResult(result) {
 }
 
 
-/************************************************************
+/********************************************************************
  * SHOW RESULT
- ************************************************************/
+ ********************************************************************/
 
 function showResult(result) {
 
   const card =
     $("resultCard");
 
-
   const header =
     $("resultHeader");
-
 
   card.classList.add(
     "visible"
   );
-
 
   header.className =
     "result-header";
@@ -1780,13 +1778,11 @@ function showResult(result) {
     header.textContent =
       "✓ TIME IN";
 
-
     header.classList.add(
       "time-in"
     );
 
   }
-
 
   else if (
     result.action ===
@@ -1796,13 +1792,11 @@ function showResult(result) {
     header.textContent =
       "✓ TIME OUT";
 
-
     header.classList.add(
       "time-out"
     );
 
   }
-
 
   else {
 
@@ -1821,6 +1815,7 @@ function showResult(result) {
   $("resultQR").textContent =
     safeText(
       result.qr ||
+      result.plate ||
       result.serial
     );
 
@@ -1869,9 +1864,9 @@ function showResult(result) {
 }
 
 
-/************************************************************
+/********************************************************************
  * HIDE RESULT
- ************************************************************/
+ ********************************************************************/
 
 function hideResult() {
 
@@ -1882,9 +1877,9 @@ function hideResult() {
 }
 
 
-/************************************************************
+/********************************************************************
  * SUCCESS SOUND
- ************************************************************/
+ ********************************************************************/
 
 function playSuccessSound() {
 
@@ -1894,58 +1889,45 @@ function playSuccessSound() {
       window.AudioContext ||
       window.webkitAudioContext;
 
-
     if (!AudioContext) {
-
       return;
-
     }
-
 
     const ctx =
       new AudioContext();
 
-
     const oscillator =
       ctx.createOscillator();
-
 
     const gain =
       ctx.createGain();
 
-
     oscillator.type =
       "sine";
 
-
     oscillator.frequency.value =
       880;
-
 
     gain.gain.setValueAtTime(
       0.0001,
       ctx.currentTime
     );
 
-
     gain.gain.exponentialRampToValueAtTime(
       0.25,
       ctx.currentTime + 0.02
     );
-
 
     gain.gain.exponentialRampToValueAtTime(
       0.0001,
       ctx.currentTime + 0.30
     );
 
-
     oscillator.connect(gain);
 
     gain.connect(
       ctx.destination
     );
-
 
     oscillator.start();
 
@@ -1964,9 +1946,9 @@ function playSuccessSound() {
 }
 
 
-/************************************************************
+/********************************************************************
  * ERROR SOUND
- ************************************************************/
+ ********************************************************************/
 
 function playErrorSound() {
 
@@ -1976,58 +1958,45 @@ function playErrorSound() {
       window.AudioContext ||
       window.webkitAudioContext;
 
-
     if (!AudioContext) {
-
       return;
-
     }
-
 
     const ctx =
       new AudioContext();
 
-
     const oscillator =
       ctx.createOscillator();
-
 
     const gain =
       ctx.createGain();
 
-
     oscillator.type =
       "square";
 
-
     oscillator.frequency.value =
       220;
-
 
     gain.gain.setValueAtTime(
       0.0001,
       ctx.currentTime
     );
 
-
     gain.gain.exponentialRampToValueAtTime(
       0.15,
       ctx.currentTime + 0.02
     );
-
 
     gain.gain.exponentialRampToValueAtTime(
       0.0001,
       ctx.currentTime + 0.25
     );
 
-
     oscillator.connect(gain);
 
     gain.connect(
       ctx.destination
     );
-
 
     oscillator.start();
 
@@ -2046,9 +2015,9 @@ function playErrorSound() {
 }
 
 
-/************************************************************
+/********************************************************************
  * PAGE LOAD
- ************************************************************/
+ ********************************************************************/
 
 document.addEventListener(
   "DOMContentLoaded",
@@ -2059,13 +2028,15 @@ document.addEventListener(
       ""
     );
 
+    hideEmailStatus();
+
   }
 );
 
 
-/************************************************************
+/********************************************************************
  * CLEANUP
- ************************************************************/
+ ********************************************************************/
 
 window.addEventListener(
   "beforeunload",
@@ -2077,9 +2048,7 @@ window.addEventListener(
     ) {
 
       try {
-
         html5QrCode.stop();
-
       } catch (ignore) {}
 
     }
