@@ -16,8 +16,18 @@
   >
 
   <meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="black"
+  >
+
+  <meta
     name="mobile-web-app-capable"
     content="yes"
+  >
+
+  <meta
+    name="theme-color"
+    content="#111111"
   >
 
   <title>CGFLEET QR Monitoring</title>
@@ -32,6 +42,7 @@
 
     * {
       box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
 
     html,
@@ -47,6 +58,20 @@
 
     body {
       min-height: 100vh;
+      min-height: -webkit-fill-available;
+      overflow-x: hidden;
+    }
+
+    button,
+    input,
+    select {
+      font-family: inherit;
+    }
+
+    button {
+      -webkit-appearance: none;
+      appearance: none;
+      touch-action: manipulation;
     }
 
     .app {
@@ -54,6 +79,7 @@
       max-width: 520px;
       margin: 0 auto;
       min-height: 100vh;
+      min-height: -webkit-fill-available;
       background: #fff;
       box-shadow: 0 0 25px rgba(0, 0, 0, 0.08);
     }
@@ -135,31 +161,37 @@
       border-radius: 12px;
       overflow: hidden;
       background: #000;
-      min-height: 10px;
+      min-height: 20px;
+      position: relative;
     }
 
     #reader video {
       width: 100% !important;
       height: auto !important;
       min-height: 240px;
+      max-height: 70vh;
       object-fit: cover;
       border-radius: 12px;
       display: block;
+      background: #000;
       -webkit-transform: translateZ(0);
       transform: translateZ(0);
     }
 
     #reader__scan_region {
       background: #000 !important;
+      width: 100% !important;
     }
 
     #reader__scan_region video {
       width: 100% !important;
       height: auto !important;
       min-height: 240px !important;
+      max-height: 70vh !important;
       object-fit: cover !important;
       border-radius: 12px !important;
       display: block !important;
+      background: #000 !important;
       -webkit-transform: translateZ(0);
       transform: translateZ(0);
     }
@@ -177,12 +209,14 @@
       padding: 10px 14px !important;
       font-weight: 900 !important;
       cursor: pointer !important;
+      min-height: 44px !important;
     }
 
     #reader__dashboard select {
       border-radius: 8px !important;
       padding: 8px !important;
       max-width: 100% !important;
+      min-height: 42px !important;
     }
 
     #reader__status_span {
@@ -200,7 +234,7 @@
 
     .btn {
       width: 100%;
-      min-height: 50px;
+      min-height: 52px;
       border: none;
       border-radius: 12px;
       font-size: 15px;
@@ -452,6 +486,15 @@
 
     }
 
+    @media (orientation: landscape) and (max-width: 900px) {
+
+      #reader video,
+      #reader__scan_region video {
+        max-height: 65vh !important;
+      }
+
+    }
+
   </style>
 
 </head>
@@ -459,8 +502,6 @@
 <body>
 
   <div class="app">
-
-    <!-- HEADER -->
 
     <header class="header">
 
@@ -477,8 +518,6 @@
 
     <main class="main">
 
-      <!-- SYSTEM STATUS -->
-
       <div class="system-status">
 
         <span
@@ -493,8 +532,6 @@
       </div>
 
 
-      <!-- SCANNER -->
-
       <div class="scanner-card">
 
         <div id="reader"></div>
@@ -502,13 +539,11 @@
       </div>
 
 
-      <!-- CAMERA HELP -->
-
       <div
         id="cameraHelp"
         class="camera-help">
 
-        <strong>Camera access required.</strong>
+        <strong>CAMERA ACCESS REQUIRED</strong>
 
         <br><br>
 
@@ -520,16 +555,22 @@
 
         <br>
 
-        Open this page in Safari and tap
+        Use Safari and press
         <strong>START SCANNER</strong>.
+
+        <br>
+
         When Safari asks for camera permission,
         select <strong>Allow</strong>.
 
         <br><br>
 
-        If camera permission was previously denied,
-        open Safari website settings and allow
-        <strong>Camera</strong> for this GitHub Pages site.
+        If camera permission was previously denied:
+
+        <br>
+
+        Open Safari website settings and set
+        <strong>Camera → Allow</strong>.
 
         <br><br>
 
@@ -537,18 +578,19 @@
 
         <br>
 
-        Open the page in Chrome and allow
-        <strong>Camera</strong> permission when requested.
+        Use Chrome and allow Camera permission.
 
         <br><br>
 
-        <strong>Important:</strong> The website must be opened
-        using HTTPS for camera access.
+        <strong>Important:</strong>
+
+        <br>
+
+        The GitHub Pages website must use
+        <strong>HTTPS</strong>.
 
       </div>
 
-
-      <!-- SCAN MESSAGE -->
 
       <div
         id="scanMessage"
@@ -556,15 +598,11 @@
       </div>
 
 
-      <!-- EMAIL STATUS -->
-
       <div
         id="emailStatus"
         class="email-status">
       </div>
 
-
-      <!-- LOADING -->
 
       <div
         id="loading"
@@ -576,8 +614,6 @@
 
       </div>
 
-
-      <!-- RESULT -->
 
       <div
         id="resultCard"
@@ -747,15 +783,12 @@
       </div>
 
 
-      <!-- BUTTONS -->
-
       <div class="button-row">
 
         <button
           id="startButton"
           class="btn btn-scan"
-          type="button"
-          onclick="startScanner()">
+          type="button">
 
           START SCANNER
 
@@ -766,7 +799,6 @@
           id="stopButton"
           class="btn btn-stop"
           type="button"
-          onclick="stopScanner()"
           disabled>
 
           STOP
@@ -777,8 +809,7 @@
         <button
           id="uploadButton"
           class="btn btn-upload"
-          type="button"
-          onclick="openQRFilePicker()">
+          type="button">
 
           UPLOAD QR IMAGE
 
@@ -790,13 +821,10 @@
           type="file"
           accept="image/*"
           capture="environment"
-          onchange="handleQRFile(this.files[0])"
         >
 
       </div>
 
-
-      <!-- DEVICE INFO -->
 
       <div
         style="
@@ -807,11 +835,13 @@
           margin-top:12px;
         ">
 
-        Camera: iPhone / iPad / Android / Tablet
+        Camera:
+        iPhone / iPad / Android / Tablet
 
         <br>
 
-        Upload: Computer / Laptop / iPhone / iPad / Android / Tablet
+        Upload:
+        Computer / Laptop / iPhone / iPad / Android / Tablet
 
       </div>
 
@@ -844,6 +874,8 @@
     let html5QrCode = null;
 
     let scannerRunning = false;
+
+    let startingScanner = false;
 
     let processingScan = false;
 
@@ -995,7 +1027,7 @@
 
 
     /********************************************************************
-     * CAMERA / BROWSER SUPPORT CHECK
+     * BROWSER / CAMERA SUPPORT
      ********************************************************************/
 
     function checkCameraSupport() {
@@ -1009,7 +1041,7 @@
         return {
           ok: false,
           message:
-            "Camera requires HTTPS. Open the GitHub Pages HTTPS address."
+            "CAMERA REQUIRES HTTPS. Open the GitHub Pages HTTPS address."
         };
 
       }
@@ -1023,7 +1055,7 @@
         return {
           ok: false,
           message:
-            "This browser does not provide camera access. Please use Safari on iPhone/iPad or Chrome on Android."
+            "CAMERA API IS NOT AVAILABLE. Use Safari on iPhone/iPad or Chrome on Android."
         };
 
       }
@@ -1036,7 +1068,7 @@
         return {
           ok: false,
           message:
-            "QR scanner library could not be loaded. Check your internet connection."
+            "QR SCANNER LIBRARY DID NOT LOAD. Check your internet connection."
         };
 
       }
@@ -1045,6 +1077,43 @@
       return {
         ok: true
       };
+
+    }
+
+
+    /********************************************************************
+     * CAMERA PERMISSION CHECK
+     ********************************************************************/
+
+    async function checkCameraPermission() {
+
+      try {
+
+        if (
+          !navigator.permissions ||
+          !navigator.permissions.query
+        ) {
+
+          return "unknown";
+
+        }
+
+
+        const permission =
+          await navigator.permissions.query({
+            name: "camera"
+          });
+
+
+        return permission.state;
+
+      }
+
+      catch (error) {
+
+        return "unknown";
+
+      }
 
     }
 
@@ -1071,6 +1140,10 @@
         }
 
 
+        /*
+         * Prefer rear/environment camera.
+         */
+
         const preferred =
           cameras.find(
             function(camera) {
@@ -1080,12 +1153,14 @@
                   camera.label || ""
                 ).toLowerCase();
 
+
               return (
                 label.includes("back") ||
                 label.includes("rear") ||
                 label.includes("environment") ||
                 label.includes("world") ||
-                label.includes("main")
+                label.includes("main") ||
+                label.includes("wide")
               );
 
             }
@@ -1093,13 +1168,22 @@
 
 
         if (preferred) {
+
           return preferred.id;
+
         }
 
 
+        /*
+         * If there is only one camera,
+         * use that camera.
+         */
+
         return cameras[0].id;
 
-      } catch (error) {
+      }
+
+      catch (error) {
 
         console.warn(
           "CAMERA LIST ERROR:",
@@ -1114,90 +1198,31 @@
 
 
     /********************************************************************
-     * START CAMERA SCANNER
+     * CREATE SCANNER
      ********************************************************************/
 
-    async function startScanner() {
+    function createScanner() {
 
-      if (scannerRunning) {
-        return;
-      }
+      $("reader").innerHTML = "";
 
+      html5QrCode =
+        new Html5Qrcode("reader");
 
-      hideMessage();
-
-      hideEmailStatus();
-
-      $("cameraHelp")
-        .classList
-        .remove("visible");
+    }
 
 
-      const support =
-        checkCameraSupport();
+    /********************************************************************
+     * SCANNER CONFIG
+     ********************************************************************/
 
+    function getScannerConfig() {
 
-      if (!support.ok) {
+      return {
 
-        setSystemStatus(
-          "Camera unavailable",
-          "error"
-        );
+        fps: 10,
 
-        $("cameraHelp")
-          .classList
-          .add("visible");
-
-        showMessage(
-          support.message,
-          "error"
-        );
-
-        return;
-
-      }
-
-
-      /*
-       * IMPORTANT:
-       *
-       * Camera access is started directly from the
-       * START SCANNER button.
-       *
-       * This is important for iPhone/iPad Safari.
-       */
-
-      try {
-
-        /*
-         * Remove previous scanner.
-         */
-
-        if (html5QrCode) {
-
-          try {
-            await html5QrCode.stop();
-          } catch (ignore) {}
-
-          try {
-            await html5QrCode.clear();
-          } catch (ignore) {}
-
-        }
-
-
-        $("reader").innerHTML = "";
-
-
-        html5QrCode =
-          new Html5Qrcode("reader");
-
-
-        const config = {
-
-          fps: 10,
-
-          qrbox: function(
+        qrbox:
+          function(
             viewfinderWidth,
             viewfinderHeight
           ) {
@@ -1237,15 +1262,142 @@
 
           },
 
-          aspectRatio: 1.0,
+        aspectRatio: 1.0,
 
-          disableFlip: false,
+        disableFlip: false,
 
-          experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true
-          }
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true
+        }
 
-        };
+      };
+
+    }
+
+
+    /********************************************************************
+     * START SCANNER
+     ********************************************************************/
+
+    async function startScanner() {
+
+      if (
+        scannerRunning ||
+        startingScanner
+      ) {
+
+        return;
+
+      }
+
+
+      startingScanner = true;
+
+
+      hideMessage();
+
+      hideEmailStatus();
+
+
+      $("cameraHelp")
+        .classList
+        .remove("visible");
+
+
+      const support =
+        checkCameraSupport();
+
+
+      if (!support.ok) {
+
+        startingScanner = false;
+
+
+        setSystemStatus(
+          "Camera unavailable",
+          "error"
+        );
+
+
+        $("cameraHelp")
+          .classList
+          .add("visible");
+
+
+        showMessage(
+          support.message,
+          "error"
+        );
+
+
+        return;
+
+      }
+
+
+      /*
+       * IMPORTANT:
+       *
+       * This function is called directly
+       * by the START SCANNER button.
+       *
+       * This is important for iOS Safari.
+       */
+
+
+      try {
+
+        setSystemStatus(
+          "Checking camera...",
+          "online"
+        );
+
+
+        /*
+         * Stop previous scanner if one exists.
+         */
+
+        if (html5QrCode) {
+
+          try {
+            await html5QrCode.stop();
+          } catch (ignore) {}
+
+          try {
+            await html5QrCode.clear();
+          } catch (ignore) {}
+
+          html5QrCode = null;
+
+        }
+
+
+        $("reader").innerHTML = "";
+
+
+        /*
+         * Check existing permission.
+         */
+
+        const permission =
+          await checkCameraPermission();
+
+
+        if (permission === "denied") {
+
+          throw {
+            name: "NotAllowedError",
+            message: "Camera permission denied"
+          };
+
+        }
+
+
+        createScanner();
+
+
+        const config =
+          getScannerConfig();
 
 
         setSystemStatus(
@@ -1255,16 +1407,9 @@
 
 
         /*
-         * FIRST CAMERA METHOD
+         * METHOD 1
          *
-         * Ask directly for the rear/environment camera.
-         *
-         * This is the preferred method for:
-         *
-         * iPhone
-         * iPad
-         * Android
-         * Android Tablet
+         * Request rear/environment camera.
          */
 
         try {
@@ -1287,17 +1432,18 @@
 
         }
 
-        catch (firstCameraError) {
+        catch (environmentError) {
 
           console.warn(
             "ENVIRONMENT CAMERA FAILED:",
-            firstCameraError
+            environmentError
           );
 
 
           /*
-           * If the first method fails,
-           * try the actual available camera list.
+           * METHOD 2
+           *
+           * Get actual camera list.
            */
 
           selectedCameraId =
@@ -1306,21 +1452,33 @@
 
           if (!selectedCameraId) {
 
-            throw firstCameraError;
+            throw environmentError;
 
           }
 
 
           try {
+
+            await html5QrCode.stop();
+
+          }
+
+          catch (ignore) {}
+
+
+          try {
+
             await html5QrCode.clear();
-          } catch (ignore) {}
+
+          }
+
+          catch (ignore) {}
 
 
           $("reader").innerHTML = "";
 
 
-          html5QrCode =
-            new Html5Qrcode("reader");
+          createScanner();
 
 
           await html5QrCode.start(
@@ -1339,6 +1497,9 @@
 
 
         scannerRunning = true;
+
+        startingScanner = false;
+
 
         $("startButton").disabled = true;
 
@@ -1369,6 +1530,8 @@
         );
 
 
+        startingScanner = false;
+
         scannerRunning = false;
 
 
@@ -1391,7 +1554,7 @@
 
 
         let cameraMessage =
-          "Hindi ma-access ang camera. Payagan ang Camera permission.";
+          "HINDI MA-ACCESS ANG CAMERA. Payagan ang Camera permission.";
 
 
         if (
@@ -1403,14 +1566,16 @@
         ) {
 
           cameraMessage =
-            "CAMERA PERMISSION DENIED. Please allow Camera access in your browser settings, then press START SCANNER again.";
+            "CAMERA PERMISSION DENIED. Allow Camera permission for this GitHub Pages website, then press START SCANNER again.";
 
         }
 
         else if (
           error &&
-          error.name ===
-            "NotFoundError"
+          (
+            error.name === "NotFoundError" ||
+            error.name === "DevicesNotFoundError"
+          )
         ) {
 
           cameraMessage =
@@ -1427,18 +1592,27 @@
         ) {
 
           cameraMessage =
-            "HINDI MABUKSAN ANG CAMERA. Baka ginagamit ito ng ibang application.";
+            "HINDI MABUKSAN ANG CAMERA. Baka ginagamit ito ng ibang application. Close other apps using the camera, then try again.";
 
         }
 
         else if (
           error &&
-          error.name ===
-            "SecurityError"
+          error.name === "SecurityError"
         ) {
 
           cameraMessage =
-            "CAMERA ACCESS BLOCKED. Make sure this GitHub Pages site is opened using HTTPS.";
+            "CAMERA ACCESS BLOCKED. Make sure this GitHub Pages website is opened using HTTPS.";
+
+        }
+
+        else if (
+          error &&
+          error.name === "OverconstrainedError"
+        ) {
+
+          cameraMessage =
+            "CAMERA CONFIGURATION NOT SUPPORTED. The system will try another available camera.";
 
         }
 
@@ -1459,15 +1633,20 @@
 
     async function stopScanner() {
 
+      startingScanner = false;
+
+
       if (!html5QrCode) {
 
         scannerRunning = false;
+
 
         $("startButton").disabled = false;
 
         $("stopButton").disabled = true;
 
         $("uploadButton").disabled = false;
+
 
         return;
 
@@ -1486,7 +1665,7 @@
 
       catch (error) {
 
-        console.error(
+        console.warn(
           "STOP SCANNER ERROR:",
           error
         );
@@ -1525,6 +1704,12 @@
         ""
       );
 
+
+      showMessage(
+        "Scanner stopped.",
+        "info"
+      );
+
     }
 
 
@@ -1545,6 +1730,7 @@
 
       }
 
+
       $("qrFileInput").click();
 
     }
@@ -1557,6 +1743,7 @@
     async function handleQRFile(file) {
 
       $("qrFileInput").value = "";
+
 
       if (!file) {
         return;
@@ -1603,9 +1790,12 @@
       processingScan = true;
 
 
+      let fileReader = null;
+
+
       try {
 
-        const fileReader =
+        fileReader =
           new Html5Qrcode("reader");
 
 
@@ -1623,6 +1813,9 @@
         }
 
         catch (ignore) {}
+
+
+        fileReader = null;
 
 
         showLoading(false);
@@ -1661,7 +1854,6 @@
 
         processQR(qr);
 
-
       }
 
       catch (error) {
@@ -1670,6 +1862,17 @@
           "QR IMAGE SCAN ERROR:",
           error
         );
+
+
+        try {
+
+          if (fileReader) {
+            await fileReader.clear();
+          }
+
+        }
+
+        catch (ignore) {}
 
 
         showLoading(false);
@@ -1755,8 +1958,7 @@
     function onScanFailure(errorMessage) {
 
       /*
-       * Continuous "QR not found" messages
-       * are intentionally ignored.
+       * Ignore continuous "QR not found" messages.
        */
 
     }
@@ -1983,13 +2185,6 @@
         showResult(result);
 
 
-        /*
-         * EMAIL STATUS
-         *
-         * Correct spelling:
-         * successfully scanned
-         */
-
         if (result.emailSent === true) {
 
           showEmailStatus(
@@ -2019,10 +2214,6 @@
         }
 
 
-        /**************************************************************
-         * TIME IN
-         **************************************************************/
-
         if (
           result.action === "TIME IN"
         ) {
@@ -2044,10 +2235,6 @@
         }
 
 
-        /**************************************************************
-         * TIME OUT
-         **************************************************************/
-
         else if (
           result.action === "TIME OUT"
         ) {
@@ -2068,10 +2255,6 @@
 
         }
 
-
-        /**************************************************************
-         * OTHER SUCCESS
-         **************************************************************/
 
         else {
 
@@ -2436,7 +2619,6 @@
           ctx.currentTime + 0.30
         );
 
-
       }
 
       catch (error) {
@@ -2520,7 +2702,6 @@
           ctx.currentTime + 0.25
         );
 
-
       }
 
       catch (error) {
@@ -2532,6 +2713,61 @@
       }
 
     }
+
+
+    /********************************************************************
+     * BUTTON EVENTS
+     ********************************************************************/
+
+    $("startButton")
+      .addEventListener(
+        "click",
+        function() {
+
+          startScanner();
+
+        }
+      );
+
+
+    $("stopButton")
+      .addEventListener(
+        "click",
+        function() {
+
+          stopScanner();
+
+        }
+      );
+
+
+    $("uploadButton")
+      .addEventListener(
+        "click",
+        function() {
+
+          openQRFilePicker();
+
+        }
+      );
+
+
+    $("qrFileInput")
+      .addEventListener(
+        "change",
+        function() {
+
+          const file =
+            this.files &&
+            this.files.length
+              ? this.files[0]
+              : null;
+
+
+          handleQRFile(file);
+
+        }
+      );
 
 
     /********************************************************************
@@ -2547,7 +2783,49 @@
           ""
         );
 
+
         hideEmailStatus();
+
+
+        /*
+         * Do NOT request camera permission here.
+         *
+         * Camera permission must be triggered by
+         * the START SCANNER button for better
+         * iPhone/iPad Safari compatibility.
+         */
+
+      }
+    );
+
+
+    /********************************************************************
+     * PAGE VISIBILITY
+     ********************************************************************/
+
+    document.addEventListener(
+      "visibilitychange",
+      function() {
+
+        /*
+         * If the user leaves the page while
+         * the camera is running, don't attempt
+         * to restart automatically.
+         *
+         * This avoids camera permission problems
+         * on iOS Safari.
+         */
+
+        if (
+          document.hidden &&
+          scannerRunning
+        ) {
+
+          console.log(
+            "Page hidden while scanner is running."
+          );
+
+        }
 
       }
     );
