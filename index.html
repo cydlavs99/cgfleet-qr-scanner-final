@@ -13,8 +13,9 @@
   <title>CGFLEET QR Monitoring</title>
 
   <!-- QR SCANNER LIBRARY -->
+  <!-- Pinned stable version for better browser compatibility -->
   <script
-    src="https://unpkg.com/html5-qrcode"
+    src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"
     type="text/javascript">
   </script>
 
@@ -131,11 +132,21 @@
     #reader video {
       width: 100% !important;
       height: auto !important;
+      min-height: 240px;
+      object-fit: cover;
       border-radius: 12px;
+      display: block;
     }
 
     #reader__scan_region {
       background: #000 !important;
+    }
+
+    #reader__scan_region video {
+      width: 100% !important;
+      height: auto !important;
+      object-fit: cover !important;
+      border-radius: 12px !important;
     }
 
     #reader__dashboard {
@@ -181,6 +192,8 @@
       font-weight: 900;
       cursor: pointer;
       transition: 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
 
     .btn:active {
@@ -482,15 +495,40 @@
 
         <strong>Camera access required.</strong>
 
-        <br>
+        <br><br>
 
         Please allow camera permission in your browser.
 
         <br><br>
 
+        <strong>iPhone / iPad:</strong>
+
+        <br>
+
+        Open this page in Safari and tap
+        <strong>START SCANNER</strong>.
+        When Safari asks for camera permission,
+        select <strong>Allow</strong>.
+
+        <br><br>
+
         If camera permission was previously denied,
-        open your browser's site settings and allow
-        Camera for this GitHub Pages site.
+        open Safari website settings and allow
+        <strong>Camera</strong> for this GitHub Pages site.
+
+        <br><br>
+
+        <strong>Android:</strong>
+
+        <br>
+
+        Open the page in Chrome and allow
+        <strong>Camera</strong> permission when requested.
+
+        <br><br>
+
+        <strong>Important:</strong> The website must be opened
+        using HTTPS for camera access.
 
       </div>
 
@@ -701,6 +739,7 @@
         <button
           id="startButton"
           class="btn btn-scan"
+          type="button"
           onclick="startScanner()">
 
           START SCANNER
@@ -711,6 +750,7 @@
         <button
           id="stopButton"
           class="btn btn-stop"
+          type="button"
           onclick="stopScanner()"
           disabled>
 
@@ -722,6 +762,7 @@
         <button
           id="uploadButton"
           class="btn btn-upload"
+          type="button"
           onclick="openQRFilePicker()">
 
           UPLOAD QR IMAGE
@@ -795,6 +836,8 @@
     let lastScannedQR = "";
 
     let lastScanTime = 0;
+
+    let selectedCameraId = null;
 
     const SCAN_COOLDOWN = 3000;
 
@@ -938,6 +981,135 @@
 
 
     /********************************************************************
+     * CAMERA / BROWSER SUPPORT CHECK
+     ********************************************************************/
+
+    function checkCameraSupport() {
+
+      if (
+        !window.isSecureContext &&
+        location.hostname !== "localhost" &&
+        location.hostname !== "127.0.0.1"
+      ) {
+
+        return {
+          ok: false,
+          message:
+            "Camera requires HTTPS. Open the GitHub Pages HTTPS address."
+        };
+
+      }
+
+
+      if (
+        !navigator.mediaDevices ||
+        !navigator.mediaDevices.getUserMedia
+      ) {
+
+        return {
+          ok: false,
+          message:
+            "This browser does not provide camera access. Please use Safari on iPhone/iPad or Chrome on Android."
+        };
+
+      }
+
+
+      if (
+        typeof Html5Qrcode === "undefined"
+      ) {
+
+        return {
+          ok: false,
+          message:
+            "QR scanner library could not be loaded. Check your internet connection."
+        };
+
+      }
+
+
+      return {
+        ok: true
+      };
+
+    }
+
+
+    /********************************************************************
+     * FIND BEST CAMERA
+     ********************************************************************/
+
+    async function findBestCamera() {
+
+      try {
+
+        const cameras =
+          await Html5Qrcode.getCameras();
+
+
+        if (
+          !cameras ||
+          cameras.length === 0
+        ) {
+
+          return null;
+
+        }
+
+
+        /*
+         * Prefer cameras whose label indicates
+         * rear/back/environment camera.
+         */
+
+        const preferred =
+          cameras.find(
+            function(camera) {
+
+              const label =
+                String(
+                  camera.label || ""
+                ).toLowerCase();
+
+              return (
+                label.includes("back") ||
+                label.includes("rear") ||
+                label.includes("environment") ||
+                label.includes("world") ||
+                label.includes("main")
+              );
+
+            }
+          );
+
+
+        if (preferred) {
+          return preferred.id;
+        }
+
+
+        /*
+         * If no camera label is available,
+         * use the first available camera.
+         */
+
+        return cameras[0].id;
+
+      } catch (error) {
+
+        console.warn(
+          "CAMERA LIST ERROR:",
+          error
+        );
+
+        return null;
+
+      }
+
+    }
+
+
+    /********************************************************************
      * START CAMERA SCANNER
      ********************************************************************/
 
@@ -947,6 +1119,7 @@
         return;
       }
 
+
       hideMessage();
 
       hideEmailStatus();
@@ -955,97 +1128,12 @@
         .classList
         .remove("visible");
 
-      try {
 
-        if (html5QrCode) {
-
-          try {
-            await html5QrCode.clear();
-          } catch (ignore) {}
-
-        }
-
-        html5QrCode =
-          new Html5Qrcode("reader");
-
-        const config = {
-
-          fps: 10,
-
-          qrbox: function(
-            viewfinderWidth,
-            viewfinderHeight
-          ) {
-
-            const size =
-              Math.floor(
-                Math.min(
-                  viewfinderWidth,
-                  viewfinderHeight
-                ) * 0.70
-              );
-
-            return {
-              width: size,
-              height: size
-            };
-
-          },
-
-          aspectRatio: 1.0,
-
-          disableFlip: false
-
-        };
+      const support =
+        checkCameraSupport();
 
 
-        await html5QrCode.start(
-
-          {
-            facingMode: "environment"
-          },
-
-          config,
-
-          onScanSuccess,
-
-          onScanFailure
-
-        );
-
-
-        scannerRunning = true;
-
-        $("startButton").disabled = true;
-
-        $("stopButton").disabled = false;
-
-        $("uploadButton").disabled = true;
-
-        setSystemStatus(
-          "Scanner ready",
-          "online"
-        );
-
-        showMessage(
-          "READY — I-scan ang QR Code.",
-          "info"
-        );
-
-      } catch (error) {
-
-        console.error(
-          "CAMERA START ERROR:",
-          error
-        );
-
-        scannerRunning = false;
-
-        $("startButton").disabled = false;
-
-        $("stopButton").disabled = true;
-
-        $("uploadButton").disabled = false;
+      if (!support.ok) {
 
         setSystemStatus(
           "Camera unavailable",
@@ -1057,7 +1145,298 @@
           .add("visible");
 
         showMessage(
-          "Hindi ma-access ang camera. Payagan ang Camera permission.",
+          support.message,
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      try {
+
+        /*
+         * Remove any previous scanner instance.
+         */
+
+        if (html5QrCode) {
+
+          try {
+
+            await html5QrCode.stop();
+
+          } catch (ignore) {}
+
+
+          try {
+
+            await html5QrCode.clear();
+
+          } catch (ignore) {}
+
+        }
+
+
+        $("reader").innerHTML = "";
+
+
+        /*
+         * Create a fresh scanner.
+         */
+
+        html5QrCode =
+          new Html5Qrcode("reader");
+
+
+        const config = {
+
+          fps: 10,
+
+          qrbox: function(
+            viewfinderWidth,
+            viewfinderHeight
+          ) {
+
+            const smallestDimension =
+              Math.min(
+                viewfinderWidth,
+                viewfinderHeight
+              );
+
+
+            const size =
+              Math.floor(
+                smallestDimension * 0.70
+              );
+
+
+            return {
+
+              width: Math.max(
+                180,
+                Math.min(
+                  size,
+                  400
+                )
+              ),
+
+              height: Math.max(
+                180,
+                Math.min(
+                  size,
+                  400
+                )
+              )
+
+            };
+
+          },
+
+          aspectRatio: 1.0,
+
+          disableFlip: false,
+
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+          }
+
+        };
+
+
+        setSystemStatus(
+          "Requesting camera permission...",
+          "online"
+        );
+
+
+        /*
+         * FIRST METHOD
+         *
+         * Ask the browser for the rear/environment camera.
+         *
+         * This works well with iPhone/iPad Safari
+         * and Android Chrome.
+         */
+
+        try {
+
+          await html5QrCode.start(
+
+            {
+              facingMode: {
+                ideal: "environment"
+              }
+            },
+
+            config,
+
+            onScanSuccess,
+
+            onScanFailure
+
+          );
+
+        } catch (firstCameraError) {
+
+          console.warn(
+            "FACING MODE CAMERA FAILED:",
+            firstCameraError
+          );
+
+
+          /*
+           * FALLBACK METHOD
+           *
+           * Get the actual camera list and
+           * select the best available camera.
+           */
+
+          selectedCameraId =
+            await findBestCamera();
+
+
+          if (!selectedCameraId) {
+
+            throw firstCameraError;
+
+          }
+
+
+          /*
+           * Clear the failed scanner before retry.
+           */
+
+          try {
+
+            await html5QrCode.clear();
+
+          } catch (ignore) {}
+
+
+          $("reader").innerHTML = "";
+
+
+          html5QrCode =
+            new Html5Qrcode("reader");
+
+
+          await html5QrCode.start(
+
+            selectedCameraId,
+
+            config,
+
+            onScanSuccess,
+
+            onScanFailure
+
+          );
+
+        }
+
+
+        scannerRunning = true;
+
+        $("startButton").disabled = true;
+
+        $("stopButton").disabled = false;
+
+        $("uploadButton").disabled = true;
+
+
+        setSystemStatus(
+          "Scanner ready",
+          "online"
+        );
+
+
+        showMessage(
+          "READY — I-scan ang QR Code.",
+          "info"
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          "CAMERA START ERROR:",
+          error
+        );
+
+
+        scannerRunning = false;
+
+
+        $("startButton").disabled = false;
+
+        $("stopButton").disabled = true;
+
+        $("uploadButton").disabled = false;
+
+
+        setSystemStatus(
+          "Camera unavailable",
+          "error"
+        );
+
+
+        $("cameraHelp")
+          .classList
+          .add("visible");
+
+
+        let cameraMessage =
+          "Hindi ma-access ang camera. Payagan ang Camera permission.";
+
+
+        if (
+          error &&
+          error.name ===
+            "NotAllowedError"
+        ) {
+
+          cameraMessage =
+            "Camera permission was denied. Please allow Camera access in your browser settings, then press START SCANNER again.";
+
+        }
+
+        else if (
+          error &&
+          error.name ===
+            "NotFoundError"
+        ) {
+
+          cameraMessage =
+            "Walang available camera na nakita sa device.";
+
+        }
+
+        else if (
+          error &&
+          error.name ===
+            "NotReadableError"
+        ) {
+
+          cameraMessage =
+            "Hindi mabuksan ang camera. Baka ginagamit ito ng ibang application.";
+
+        }
+
+        else if (
+          error &&
+          error.name ===
+            "SecurityError"
+        ) {
+
+          cameraMessage =
+            "Camera access was blocked by browser security. Make sure this GitHub Pages site is opened using HTTPS.";
+
+        }
+
+
+        showMessage(
+          cameraMessage,
           "error"
         );
 
@@ -1073,13 +1452,26 @@
     async function stopScanner() {
 
       if (!html5QrCode) {
+
+        scannerRunning = false;
+
+        $("startButton").disabled = false;
+
+        $("stopButton").disabled = true;
+
+        $("uploadButton").disabled = false;
+
         return;
+
       }
+
 
       try {
 
         if (scannerRunning) {
+
           await html5QrCode.stop();
+
         }
 
       } catch (error) {
@@ -1091,19 +1483,30 @@
 
       }
 
+
       try {
+
         await html5QrCode.clear();
+
       } catch (ignore) {}
+
 
       html5QrCode = null;
 
       scannerRunning = false;
+
+      selectedCameraId = null;
+
+
+      $("reader").innerHTML = "";
+
 
       $("startButton").disabled = false;
 
       $("stopButton").disabled = true;
 
       $("uploadButton").disabled = false;
+
 
       setSystemStatus(
         "Scanner stopped",
@@ -1147,6 +1550,7 @@
         return;
       }
 
+
       if (
         !file.type ||
         !file.type.startsWith("image/")
@@ -1163,7 +1567,9 @@
 
 
       if (scannerRunning) {
+
         await stopScanner();
+
       }
 
 
@@ -1175,10 +1581,12 @@
 
       showLoading(true);
 
+
       setSystemStatus(
         "Reading QR image...",
         "online"
       );
+
 
       processingScan = true;
 
@@ -1188,6 +1596,7 @@
         const fileReader =
           new Html5Qrcode("reader");
 
+
         const decodedText =
           await fileReader.scanFile(
             file,
@@ -1196,7 +1605,9 @@
 
 
         try {
+
           await fileReader.clear();
+
         } catch (ignore) {}
 
 
@@ -1213,17 +1624,21 @@
 
           processingScan = false;
 
+
           setSystemStatus(
             "QR not detected",
             "error"
           );
+
 
           showMessage(
             "WALANG QR CODE NA NABASA SA IMAGE.",
             "error"
           );
 
+
           playErrorSound();
+
 
           return;
 
@@ -1232,6 +1647,7 @@
 
         processQR(qr);
 
+
       } catch (error) {
 
         console.error(
@@ -1239,19 +1655,23 @@
           error
         );
 
+
         showLoading(false);
 
         processingScan = false;
+
 
         setSystemStatus(
           "QR image unreadable",
           "error"
         );
 
+
         showMessage(
           "HINDI MABASA ANG QR IMAGE. Gumamit ng mas malinaw na larawan.",
           "error"
         );
+
 
         playErrorSound();
 
@@ -1306,6 +1726,7 @@
 
       processingScan = true;
 
+
       processQR(qr);
 
     }
@@ -1317,7 +1738,9 @@
 
     function onScanFailure(errorMessage) {
 
-      // Ignore continuous no-QR messages.
+      /*
+       * Ignore continuous no-QR messages.
+       */
 
     }
 
@@ -1333,6 +1756,7 @@
       hideMessage();
 
       hideEmailStatus();
+
 
       setSystemStatus(
         "Processing QR Code...",
@@ -1362,6 +1786,7 @@
               return;
             }
 
+
             completed = true;
 
             cleanup();
@@ -1370,10 +1795,12 @@
 
             processingScan = false;
 
+
             setSystemStatus(
               "Connection timeout",
               "error"
             );
+
 
             showMessage(
               "SERVER TIMEOUT — Pakiscan muli.",
@@ -1392,6 +1819,7 @@
             return;
           }
 
+
           completed = true;
 
           clearTimeout(timeout);
@@ -1401,6 +1829,7 @@
           showLoading(false);
 
           processingScan = false;
+
 
           handleScanResult(result);
 
@@ -1434,6 +1863,7 @@
             return;
           }
 
+
           completed = true;
 
           clearTimeout(timeout);
@@ -1444,10 +1874,12 @@
 
           processingScan = false;
 
+
           setSystemStatus(
             "Server connection error",
             "error"
           );
+
 
           showMessage(
             "SERVER CONNECTION ERROR — Pakiscan muli.",
@@ -1511,10 +1943,12 @@
           "error"
         );
 
+
         showMessage(
           "INVALID SERVER RESPONSE",
           "error"
         );
+
 
         return;
 
@@ -1586,10 +2020,12 @@
             "online"
           );
 
+
           showMessage(
             "TIME IN SUCCESSFUL",
             "success"
           );
+
 
           playSuccessSound();
 
@@ -1609,10 +2045,12 @@
             "online"
           );
 
+
           showMessage(
             "TIME OUT SUCCESSFUL",
             "success"
           );
+
 
           playSuccessSound();
 
@@ -1630,10 +2068,12 @@
             "online"
           );
 
+
           showMessage(
             "SCAN SUCCESSFUL",
             "success"
           );
+
 
           playSuccessSound();
 
@@ -1668,15 +2108,18 @@
 
         hideEmailStatus();
 
+
         setSystemStatus(
           "QR not registered",
           "error"
         );
 
+
         showMessage(
           "QR CODE NOT REGISTERED",
           "error"
         );
+
 
         playErrorSound();
 
@@ -1709,15 +2152,18 @@
 
         hideEmailStatus();
 
+
         setSystemStatus(
           "Invalid QR Code",
           "error"
         );
 
+
         showMessage(
           "INVALID QR CODE",
           "error"
         );
+
 
         playErrorSound();
 
@@ -1745,16 +2191,19 @@
 
       hideEmailStatus();
 
+
       setSystemStatus(
         "System error",
         "error"
       );
+
 
       showMessage(
         result.message ||
         "SYSTEM ERROR",
         "error"
       );
+
 
       playErrorSound();
 
@@ -1780,6 +2229,7 @@
       const card =
         $("resultCard");
 
+
       const header =
         $("resultHeader");
 
@@ -1801,6 +2251,7 @@
         header.textContent =
           "✓ TIME IN";
 
+
         header.classList.add(
           "time-in"
         );
@@ -1815,6 +2266,7 @@
 
         header.textContent =
           "✓ TIME OUT";
+
 
         header.classList.add(
           "time-out"
