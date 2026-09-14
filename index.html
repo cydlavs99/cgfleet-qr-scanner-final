@@ -10,10 +10,19 @@
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
   >
 
+  <meta
+    name="apple-mobile-web-app-capable"
+    content="yes"
+  >
+
+  <meta
+    name="mobile-web-app-capable"
+    content="yes"
+  >
+
   <title>CGFLEET QR Monitoring</title>
 
   <!-- QR SCANNER LIBRARY -->
-  <!-- Pinned stable version for better browser compatibility -->
   <script
     src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"
     type="text/javascript">
@@ -136,6 +145,8 @@
       object-fit: cover;
       border-radius: 12px;
       display: block;
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
     }
 
     #reader__scan_region {
@@ -145,8 +156,12 @@
     #reader__scan_region video {
       width: 100% !important;
       height: auto !important;
+      min-height: 240px !important;
       object-fit: cover !important;
       border-radius: 12px !important;
+      display: block !important;
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
     }
 
     #reader__dashboard {
@@ -770,12 +785,11 @@
         </button>
 
 
-        <!-- HIDDEN FILE INPUT -->
-
         <input
           id="qrFileInput"
           type="file"
           accept="image/*"
+          capture="environment"
           onchange="handleQRFile(this.files[0])"
         >
 
@@ -1057,11 +1071,6 @@
         }
 
 
-        /*
-         * Prefer cameras whose label indicates
-         * rear/back/environment camera.
-         */
-
         const preferred =
           cameras.find(
             function(camera) {
@@ -1087,11 +1096,6 @@
           return preferred.id;
         }
 
-
-        /*
-         * If no camera label is available,
-         * use the first available camera.
-         */
 
         return cameras[0].id;
 
@@ -1154,25 +1158,29 @@
       }
 
 
+      /*
+       * IMPORTANT:
+       *
+       * Camera access is started directly from the
+       * START SCANNER button.
+       *
+       * This is important for iPhone/iPad Safari.
+       */
+
       try {
 
         /*
-         * Remove any previous scanner instance.
+         * Remove previous scanner.
          */
 
         if (html5QrCode) {
 
           try {
-
             await html5QrCode.stop();
-
           } catch (ignore) {}
 
-
           try {
-
             await html5QrCode.clear();
-
           } catch (ignore) {}
 
         }
@@ -1180,10 +1188,6 @@
 
         $("reader").innerHTML = "";
 
-
-        /*
-         * Create a fresh scanner.
-         */
 
         html5QrCode =
           new Html5Qrcode("reader");
@@ -1251,12 +1255,16 @@
 
 
         /*
-         * FIRST METHOD
+         * FIRST CAMERA METHOD
          *
-         * Ask the browser for the rear/environment camera.
+         * Ask directly for the rear/environment camera.
          *
-         * This works well with iPhone/iPad Safari
-         * and Android Chrome.
+         * This is the preferred method for:
+         *
+         * iPhone
+         * iPad
+         * Android
+         * Android Tablet
          */
 
         try {
@@ -1277,19 +1285,19 @@
 
           );
 
-        } catch (firstCameraError) {
+        }
+
+        catch (firstCameraError) {
 
           console.warn(
-            "FACING MODE CAMERA FAILED:",
+            "ENVIRONMENT CAMERA FAILED:",
             firstCameraError
           );
 
 
           /*
-           * FALLBACK METHOD
-           *
-           * Get the actual camera list and
-           * select the best available camera.
+           * If the first method fails,
+           * try the actual available camera list.
            */
 
           selectedCameraId =
@@ -1303,14 +1311,8 @@
           }
 
 
-          /*
-           * Clear the failed scanner before retry.
-           */
-
           try {
-
             await html5QrCode.clear();
-
           } catch (ignore) {}
 
 
@@ -1357,7 +1359,9 @@
         );
 
 
-      } catch (error) {
+      }
+
+      catch (error) {
 
         console.error(
           "CAMERA START ERROR:",
@@ -1392,12 +1396,14 @@
 
         if (
           error &&
-          error.name ===
-            "NotAllowedError"
+          (
+            error.name === "NotAllowedError" ||
+            error.name === "PermissionDeniedError"
+          )
         ) {
 
           cameraMessage =
-            "Camera permission was denied. Please allow Camera access in your browser settings, then press START SCANNER again.";
+            "CAMERA PERMISSION DENIED. Please allow Camera access in your browser settings, then press START SCANNER again.";
 
         }
 
@@ -1408,18 +1414,20 @@
         ) {
 
           cameraMessage =
-            "Walang available camera na nakita sa device.";
+            "WALANG AVAILABLE CAMERA na nakita sa device.";
 
         }
 
         else if (
           error &&
-          error.name ===
-            "NotReadableError"
+          (
+            error.name === "NotReadableError" ||
+            error.name === "TrackStartError"
+          )
         ) {
 
           cameraMessage =
-            "Hindi mabuksan ang camera. Baka ginagamit ito ng ibang application.";
+            "HINDI MABUKSAN ANG CAMERA. Baka ginagamit ito ng ibang application.";
 
         }
 
@@ -1430,7 +1438,7 @@
         ) {
 
           cameraMessage =
-            "Camera access was blocked by browser security. Make sure this GitHub Pages site is opened using HTTPS.";
+            "CAMERA ACCESS BLOCKED. Make sure this GitHub Pages site is opened using HTTPS.";
 
         }
 
@@ -1474,7 +1482,9 @@
 
         }
 
-      } catch (error) {
+      }
+
+      catch (error) {
 
         console.error(
           "STOP SCANNER ERROR:",
@@ -1488,7 +1498,9 @@
 
         await html5QrCode.clear();
 
-      } catch (ignore) {}
+      }
+
+      catch (ignore) {}
 
 
       html5QrCode = null;
@@ -1608,7 +1620,9 @@
 
           await fileReader.clear();
 
-        } catch (ignore) {}
+        }
+
+        catch (ignore) {}
 
 
         showLoading(false);
@@ -1648,7 +1662,9 @@
         processQR(qr);
 
 
-      } catch (error) {
+      }
+
+      catch (error) {
 
         console.error(
           "QR IMAGE SCAN ERROR:",
@@ -1739,7 +1755,8 @@
     function onScanFailure(errorMessage) {
 
       /*
-       * Ignore continuous no-QR messages.
+       * Continuous "QR not found" messages
+       * are intentionally ignored.
        */
 
     }
@@ -1912,7 +1929,9 @@
 
           delete window[callbackName];
 
-        } catch (ignore) {
+        }
+
+        catch (ignore) {
 
           window[callbackName] =
             undefined;
@@ -1967,22 +1986,15 @@
         /*
          * EMAIL STATUS
          *
-         * Code.gs returns:
-         *
-         * emailSent: true
-         * emailMessage: "..."
-         *
-         * OR
-         *
-         * emailSent: false
-         * emailMessage: "..."
+         * Correct spelling:
+         * successfully scanned
          */
 
         if (result.emailSent === true) {
 
           showEmailStatus(
             result.emailMessage ||
-            "Your QR Code succesfully scan at CGFLEET Parking and Monitoring System.",
+            "Your QR Code was successfully scanned at CGFLEET Parking and Monitoring System.",
             true
           );
 
@@ -2425,7 +2437,9 @@
         );
 
 
-      } catch (error) {
+      }
+
+      catch (error) {
 
         console.log(
           "Audio unavailable"
@@ -2507,7 +2521,9 @@
         );
 
 
-      } catch (error) {
+      }
+
+      catch (error) {
 
         console.log(
           "Audio unavailable"
@@ -2554,7 +2570,9 @@
 
             html5QrCode.stop();
 
-          } catch (ignore) {}
+          }
+
+          catch (ignore) {}
 
         }
 
