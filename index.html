@@ -555,7 +555,7 @@
             <div class="detail-row">
 
               <div class="detail-label">
-                Status
+                QR Code
               </div>
 
               <div
@@ -1838,7 +1838,11 @@
 
 
       $("resultQR").textContent =
-        "SUCCESSFUL";
+        safeText(
+          result.qr ||
+          result.plate ||
+          result.serial
+        );
 
 
       $("resultOffice").textContent =
