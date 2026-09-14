@@ -555,8 +555,16 @@
 
         <br>
 
-        Use Safari and press
-        <strong>START SCANNER</strong>.
+        Open this GitHub Pages website directly in
+        <strong>Safari</strong>.
+
+        <br>
+
+        Do NOT use the Home Screen/PWA version while testing.
+
+        <br>
+
+        Press <strong>START SCANNER</strong>.
 
         <br>
 
@@ -565,7 +573,7 @@
 
         <br><br>
 
-        If camera permission was previously denied:
+        If permission was previously blocked:
 
         <br>
 
@@ -586,8 +594,14 @@
 
         <br>
 
-        The GitHub Pages website must use
+        This website must be opened using
         <strong>HTTPS</strong>.
+
+        <br><br>
+
+        <strong id="cameraDiagnostic">
+          Camera diagnostic: waiting...
+        </strong>
 
       </div>
 
@@ -1027,7 +1041,43 @@
 
 
     /********************************************************************
-     * BROWSER / CAMERA SUPPORT
+     * CAMERA ERROR TEXT
+     ********************************************************************/
+
+    function getCameraErrorDetails(error) {
+
+      let name = "";
+
+      let message = "";
+
+      if (error) {
+
+        name =
+          String(
+            error.name ||
+            ""
+          ).trim();
+
+        message =
+          String(
+            error.message ||
+            error ||
+            ""
+          ).trim();
+
+      }
+
+
+      return {
+        name: name || "UnknownError",
+        message: message || "No additional error information."
+      };
+
+    }
+
+
+    /********************************************************************
+     * CAMERA SUPPORT
      ********************************************************************/
 
     function checkCameraSupport() {
@@ -1082,36 +1132,138 @@
 
 
     /********************************************************************
-     * CAMERA PERMISSION CHECK
+     * CAMERA DIAGNOSTIC
      ********************************************************************/
 
-    async function checkCameraPermission() {
+    function showCameraDiagnostic(text) {
+
+      const box =
+        $("cameraDiagnostic");
+
+      if (box) {
+
+        box.textContent =
+          "Camera diagnostic: " +
+          text;
+
+      }
+
+    }
+
+
+    /********************************************************************
+     * DIRECT CAMERA TEST
+     *
+     * This deliberately uses the browser's real getUserMedia()
+     * instead of navigator.permissions.query().
+     *
+     * This is more reliable for diagnosing iPhone/iPad/Android.
+     ********************************************************************/
+
+    async function requestCameraStream() {
+
+      if (
+        !navigator.mediaDevices ||
+        !navigator.mediaDevices.getUserMedia
+      ) {
+
+        throw new Error(
+          "getUserMedia is not available in this browser."
+        );
+
+      }
+
 
       try {
 
-        if (
-          !navigator.permissions ||
-          !navigator.permissions.query
-        ) {
+        const stream =
+          await navigator.mediaDevices.getUserMedia({
 
-          return "unknown";
+            audio: false,
 
-        }
+            video: {
+              facingMode: {
+                ideal: "environment"
+              }
+            }
 
-
-        const permission =
-          await navigator.permissions.query({
-            name: "camera"
           });
 
 
-        return permission.state;
+        showCameraDiagnostic(
+          "Camera permission granted."
+        );
+
+
+        return stream;
 
       }
 
       catch (error) {
 
-        return "unknown";
+        const details =
+          getCameraErrorDetails(error);
+
+
+        console.error(
+          "DIRECT getUserMedia ERROR:",
+          error
+        );
+
+
+        showCameraDiagnostic(
+          details.name +
+          " — " +
+          details.message
+        );
+
+
+        throw error;
+
+      }
+
+    }
+
+
+    /********************************************************************
+     * STOP MEDIA STREAM
+     ********************************************************************/
+
+    function stopMediaStream(stream) {
+
+      if (!stream) {
+        return;
+      }
+
+
+      try {
+
+        const tracks =
+          stream.getTracks();
+
+
+        tracks.forEach(
+          function(track) {
+
+            try {
+
+              track.stop();
+
+            }
+
+            catch (ignore) {}
+
+          }
+        );
+
+      }
+
+      catch (error) {
+
+        console.warn(
+          "STREAM STOP ERROR:",
+          error
+        );
 
       }
 
@@ -1140,9 +1292,11 @@
         }
 
 
-        /*
-         * Prefer rear/environment camera.
-         */
+        console.log(
+          "AVAILABLE CAMERAS:",
+          cameras
+        );
+
 
         const preferred =
           cameras.find(
@@ -1159,8 +1313,7 @@
                 label.includes("rear") ||
                 label.includes("environment") ||
                 label.includes("world") ||
-                label.includes("main") ||
-                label.includes("wide")
+                label.includes("main")
               );
 
             }
@@ -1174,11 +1327,6 @@
         }
 
 
-        /*
-         * If there is only one camera,
-         * use that camera.
-         */
-
         return cameras[0].id;
 
       }
@@ -1189,6 +1337,18 @@
           "CAMERA LIST ERROR:",
           error
         );
+
+
+        const details =
+          getCameraErrorDetails(error);
+
+
+        showCameraDiagnostic(
+          details.name +
+          " — " +
+          details.message
+        );
+
 
         return null;
 
@@ -1206,7 +1366,9 @@
       $("reader").innerHTML = "";
 
       html5QrCode =
-        new Html5Qrcode("reader");
+        new Html5Qrcode(
+          "reader"
+        );
 
     }
 
@@ -1242,27 +1404,27 @@
 
             return {
 
-              width: Math.max(
-                180,
-                Math.min(
-                  size,
-                  400
-                )
-              ),
+              width:
+                Math.max(
+                  180,
+                  Math.min(
+                    size,
+                    400
+                  )
+                ),
 
-              height: Math.max(
-                180,
-                Math.min(
-                  size,
-                  400
+              height:
+                Math.max(
+                  180,
+                  Math.min(
+                    size,
+                    400
+                  )
                 )
-              )
 
             };
 
           },
-
-        aspectRatio: 1.0,
 
         disableFlip: false,
 
@@ -1335,16 +1497,6 @@
       }
 
 
-      /*
-       * IMPORTANT:
-       *
-       * This function is called directly
-       * by the START SCANNER button.
-       *
-       * This is important for iOS Safari.
-       */
-
-
       try {
 
         setSystemStatus(
@@ -1353,19 +1505,34 @@
         );
 
 
+        showCameraDiagnostic(
+          "Requesting camera..."
+        );
+
+
         /*
-         * Stop previous scanner if one exists.
+         * If another scanner exists, stop it first.
          */
 
         if (html5QrCode) {
 
           try {
+
             await html5QrCode.stop();
-          } catch (ignore) {}
+
+          }
+
+          catch (ignore) {}
+
 
           try {
+
             await html5QrCode.clear();
-          } catch (ignore) {}
+
+          }
+
+          catch (ignore) {}
+
 
           html5QrCode = null;
 
@@ -1376,22 +1543,62 @@
 
 
         /*
-         * Check existing permission.
+         * IMPORTANT:
+         *
+         * We do NOT use:
+         *
+         * navigator.permissions.query({
+         *   name: "camera"
+         * })
+         *
+         * because that can report a permission state
+         * that does not accurately tell us whether
+         * getUserMedia() can actually start.
+         *
+         * We directly test the real camera API.
          */
 
-        const permission =
-          await checkCameraPermission();
+        let permissionStream = null;
 
 
-        if (permission === "denied") {
+        try {
 
-          throw {
-            name: "NotAllowedError",
-            message: "Camera permission denied"
-          };
+          permissionStream =
+            await requestCameraStream();
 
         }
 
+        catch (permissionError) {
+
+          const details =
+            getCameraErrorDetails(
+              permissionError
+            );
+
+
+          throw permissionError;
+
+        }
+
+
+        /*
+         * Stop the temporary stream.
+         *
+         * html5-qrcode will open the camera again
+         * for the actual scanner.
+         */
+
+        stopMediaStream(
+          permissionStream
+        );
+
+
+        permissionStream = null;
+
+
+        /*
+         * Create scanner.
+         */
 
         createScanner();
 
@@ -1401,7 +1608,7 @@
 
 
         setSystemStatus(
-          "Requesting camera permission...",
+          "Starting rear camera...",
           "online"
         );
 
@@ -1409,7 +1616,11 @@
         /*
          * METHOD 1
          *
-         * Request rear/environment camera.
+         * Direct environment camera.
+         *
+         * Use the standard form:
+         *
+         * { facingMode: "environment" }
          */
 
         try {
@@ -1417,9 +1628,8 @@
           await html5QrCode.start(
 
             {
-              facingMode: {
-                ideal: "environment"
-              }
+              facingMode:
+                "environment"
             },
 
             config,
@@ -1440,10 +1650,23 @@
           );
 
 
+          const environmentDetails =
+            getCameraErrorDetails(
+              environmentError
+            );
+
+
+          showCameraDiagnostic(
+            environmentDetails.name +
+            " — " +
+            environmentDetails.message
+          );
+
+
           /*
            * METHOD 2
            *
-           * Get actual camera list.
+           * Try an actual camera ID.
            */
 
           selectedCameraId =
@@ -1481,6 +1704,12 @@
           createScanner();
 
 
+          setSystemStatus(
+            "Starting available camera...",
+            "online"
+          );
+
+
           await html5QrCode.start(
 
             selectedCameraId,
@@ -1514,6 +1743,11 @@
         );
 
 
+        showCameraDiagnostic(
+          "Camera is running."
+        );
+
+
         showMessage(
           "READY — I-scan ang QR Code.",
           "info"
@@ -1528,6 +1762,12 @@
           "CAMERA START ERROR:",
           error
         );
+
+
+        const details =
+          getCameraErrorDetails(
+            error
+          );
 
 
         startingScanner = false;
@@ -1553,29 +1793,34 @@
           .add("visible");
 
 
+        showCameraDiagnostic(
+          details.name +
+          " — " +
+          details.message
+        );
+
+
         let cameraMessage =
-          "HINDI MA-ACCESS ANG CAMERA. Payagan ang Camera permission.";
+          "HINDI MA-ACCESS ANG CAMERA.";
 
 
         if (
-          error &&
-          (
-            error.name === "NotAllowedError" ||
-            error.name === "PermissionDeniedError"
-          )
+          details.name ===
+          "NotAllowedError" ||
+          details.name ===
+          "PermissionDeniedError"
         ) {
 
           cameraMessage =
-            "CAMERA PERMISSION DENIED. Allow Camera permission for this GitHub Pages website, then press START SCANNER again.";
+            "CAMERA ACCESS BLOCKED. Please allow Camera for this GitHub Pages website, then reload Safari/Chrome and press START SCANNER again.";
 
         }
 
         else if (
-          error &&
-          (
-            error.name === "NotFoundError" ||
-            error.name === "DevicesNotFoundError"
-          )
+          details.name ===
+          "NotFoundError" ||
+          details.name ===
+          "DevicesNotFoundError"
         ) {
 
           cameraMessage =
@@ -1584,11 +1829,10 @@
         }
 
         else if (
-          error &&
-          (
-            error.name === "NotReadableError" ||
-            error.name === "TrackStartError"
-          )
+          details.name ===
+          "NotReadableError" ||
+          details.name ===
+          "TrackStartError"
         ) {
 
           cameraMessage =
@@ -1597,22 +1841,42 @@
         }
 
         else if (
-          error &&
-          error.name === "SecurityError"
+          details.name ===
+          "SecurityError"
         ) {
 
           cameraMessage =
-            "CAMERA ACCESS BLOCKED. Make sure this GitHub Pages website is opened using HTTPS.";
+            "CAMERA ACCESS BLOCKED BY BROWSER SECURITY. Make sure this GitHub Pages website is opened using HTTPS.";
 
         }
 
         else if (
-          error &&
-          error.name === "OverconstrainedError"
+          details.name ===
+          "OverconstrainedError"
         ) {
 
           cameraMessage =
-            "CAMERA CONFIGURATION NOT SUPPORTED. The system will try another available camera.";
+            "CAMERA CONFIGURATION NOT SUPPORTED. Trying another available camera may be required.";
+
+        }
+
+        else if (
+          details.name ===
+          "AbortError"
+        ) {
+
+          cameraMessage =
+            "CAMERA START WAS INTERRUPTED. Close other camera apps and press START SCANNER again.";
+
+        }
+
+        else if (
+          details.name ===
+          "InvalidStateError"
+        ) {
+
+          cameraMessage =
+            "CAMERA REQUEST WAS INTERRUPTED BECAUSE THE PAGE WAS NOT ACTIVE. Keep this page open and press START SCANNER again.";
 
         }
 
@@ -1702,6 +1966,11 @@
       setSystemStatus(
         "Scanner stopped",
         ""
+      );
+
+
+      showCameraDiagnostic(
+        "Camera stopped."
       );
 
 
@@ -1796,7 +2065,9 @@
       try {
 
         fileReader =
-          new Html5Qrcode("reader");
+          new Html5Qrcode(
+            "reader"
+          );
 
 
         const decodedText =
@@ -1867,7 +2138,9 @@
         try {
 
           if (fileReader) {
+
             await fileReader.clear();
+
           }
 
         }
@@ -1958,7 +2231,8 @@
     function onScanFailure(errorMessage) {
 
       /*
-       * Ignore continuous "QR not found" messages.
+       * Continuous "QR not found" messages
+       * are intentionally ignored.
        */
 
     }
@@ -2056,7 +2330,9 @@
 
 
       script =
-        document.createElement("script");
+        document.createElement(
+          "script"
+        );
 
 
       const url =
@@ -2129,7 +2405,9 @@
 
         try {
 
-          delete window[callbackName];
+          delete window[
+            callbackName
+          ];
 
         }
 
@@ -2215,7 +2493,8 @@
 
 
         if (
-          result.action === "TIME IN"
+          result.action ===
+          "TIME IN"
         ) {
 
           setSystemStatus(
@@ -2236,7 +2515,8 @@
 
 
         else if (
-          result.action === "TIME OUT"
+          result.action ===
+          "TIME OUT"
         ) {
 
           setSystemStatus(
@@ -2788,11 +3068,10 @@
 
 
         /*
-         * Do NOT request camera permission here.
+         * Do not request camera permission automatically.
          *
-         * Camera permission must be triggered by
-         * the START SCANNER button for better
-         * iPhone/iPad Safari compatibility.
+         * The START SCANNER button is the user action
+         * that starts the camera request.
          */
 
       }
@@ -2806,15 +3085,6 @@
     document.addEventListener(
       "visibilitychange",
       function() {
-
-        /*
-         * If the user leaves the page while
-         * the camera is running, don't attempt
-         * to restart automatically.
-         *
-         * This avoids camera permission problems
-         * on iOS Safari.
-         */
 
         if (
           document.hidden &&
