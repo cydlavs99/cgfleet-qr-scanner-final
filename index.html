@@ -502,7 +502,7 @@
        ========================================================== */
 
     const APPS_SCRIPT_URL =
-      "https://script.google.com/macros/s/AKfycbygUbFIwIo5p3g0AyJwr1YgWjsubkpg1Zp-ev8hkNx038YSJT2wxP7garS2e4B3lb0v/exec";
+      "https://script.google.com/macros/s/AKfycbwuYGfZWDQ5CgNQdld38J4pBqVvM_WZRHCGMGkVEHWeJ51fjf04V8L0NDV-SUcA2hdNpQ/exec";
 
 
     /* ==========================================================
@@ -886,7 +886,7 @@
 
       const url =
         APPS_SCRIPT_URL +
-        "?action=scan" +
+        "?action=processScan" +
         "&qr=" +
         encodeURIComponent(qrText) +
         "&callback=" +
@@ -1276,6 +1276,97 @@
 
 
     /* ==========================================================
+       ROBUST UPLOADED QR DECODER
+       Tries the original image first, then enlarged variants.
+       ========================================================== */
+
+    async function decodeUploadedQRImage(file) {
+
+      const attempts = [];
+
+      attempts.push(file);
+
+      try {
+        const imageURL = URL.createObjectURL(file);
+        const img = new Image();
+
+        await new Promise(function(resolve, reject) {
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = imageURL;
+        });
+
+        const scales = [2, 3, 4];
+
+        for (const scale of scales) {
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.min(img.naturalWidth * scale, 4000);
+          canvas.height = Math.min(img.naturalHeight * scale, 4000);
+
+          const ctx = canvas.getContext("2d", { willReadFrequently: true });
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          const blob = await new Promise(function(resolve) {
+            canvas.toBlob(resolve, "image/png");
+          });
+
+          if (blob) {
+            attempts.push(new File([blob], "qr-upscaled-" + scale + "x.png", { type: "image/png" }));
+          }
+
+          if (scale >= 3) {
+            const grayCanvas = document.createElement("canvas");
+            grayCanvas.width = canvas.width;
+            grayCanvas.height = canvas.height;
+            const grayCtx = grayCanvas.getContext("2d", { willReadFrequently: true });
+            grayCtx.drawImage(canvas, 0, 0);
+            const imageData = grayCtx.getImageData(0, 0, grayCanvas.width, grayCanvas.height);
+            const data = imageData.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+              const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+              data[i] = gray;
+              data[i + 1] = gray;
+              data[i + 2] = gray;
+            }
+
+            grayCtx.putImageData(imageData, 0, 0);
+
+            const grayBlob = await new Promise(function(resolve) {
+              grayCanvas.toBlob(resolve, "image/png");
+            });
+
+            if (grayBlob) {
+              attempts.push(new File([grayBlob], "qr-gray-" + scale + "x.png", { type: "image/png" }));
+            }
+          }
+        }
+
+        URL.revokeObjectURL(imageURL);
+      } catch (error) {
+        console.warn("Image preprocessing failed; trying original image only.", error);
+      }
+
+      let lastError = null;
+
+      for (const candidate of attempts) {
+        try {
+          const decoded = await html5QrCode.scanFile(candidate, true);
+          if (decoded && String(decoded).trim()) {
+            return String(decoded).trim();
+          }
+        } catch (error) {
+          lastError = error;
+        }
+      }
+
+      throw lastError || new Error("QR code could not be decoded.");
+    }
+
+
+    /* ==========================================================
        UPLOAD QR IMAGE
        
        IMPORTANT:
@@ -1395,9 +1486,8 @@
              */
 
             const decodedText =
-              await html5QrCode.scanFile(
-                file,
-                true
+              await decodeUploadedQRImage(
+                file
               );
 
             const cleanQR =
